@@ -1,52 +1,107 @@
 package com.halfnhalf;
 
+import android.app.Activity;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
 
-public class MainActivity extends AppCompatActivity {
+import com.backendless.Backendless;
+import com.backendless.IDataStore;
+import com.backendless.async.callback.AsyncCallback;
+import com.backendless.exceptions.BackendlessFault;
+
+import java.util.HashMap;
+import java.util.Map;
+public class MainActivity extends Activity {
+    private TextView status;
+    private Button updateButton;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        Backendless.setUrl(Defaults.SERVER_URL);
+        Backendless.initApp(getApplicationContext(), Defaults.APPLICATION_ID, Defaults.API_KEY);
+
+        status = (TextView) findViewById(R.id.status);
+        updateButton = (Button) findViewById(R.id.update_button);
+        updateButton.setEnabled(false);
+
+        HashMap testObject = new HashMap<>();
+        testObject.put("foo", "Hello World");
+        final IDataStore<Map> testTableDataStore = Backendless.Data.of("TestTable");
+        testTableDataStore.save(testObject, new AsyncCallback<Map>() {
             @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+            public void handleResponse(final Map response) {
+                subscribeForObjectUpdate(response, testTableDataStore);
+
+                updateButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        updateValue(response, testTableDataStore);
+                    }
+                });
+
+                status.setText("Object has been saved in the real-time database");
+                changeSavedValue(response);
+                updateButton.setEnabled(true);
+            }
+
+            @Override
+            public void handleFault(BackendlessFault fault) {
+                MainActivity.this.handleFault(fault);
+            }
+        });
+
+
+    }
+
+    private void updateValue(Map response, IDataStore<Map> testTableDataStore) {
+        updateButton.setEnabled(false);
+        final EditText propertyValueText = (EditText) findViewById(R.id.property_value);
+        response.put("foo", propertyValueText.getText().toString());
+        testTableDataStore.save(response, new AsyncCallback<Map>() {
+            @Override
+            public void handleResponse(Map response) {
+                Log.i("MYAPP", "saved " + response);
+                updateButton.setEnabled(true);
+                propertyValueText.setText("");
+            }
+
+            @Override
+            public void handleFault(BackendlessFault fault) {
+                MainActivity.this.handleFault(fault);
             }
         });
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
+    private void subscribeForObjectUpdate(Map response, IDataStore<Map> testTableDataStore) {
+        testTableDataStore.rt().addUpdateListener("objectId='" + response.get("objectId") + "'", new AsyncCallback<Map>() {
+            @Override
+            public void handleResponse(Map response) {
+                changeSavedValue(response);
+            }
+
+            @Override
+            public void handleFault(BackendlessFault fault) {
+                MainActivity.this.handleFault(fault);
+            }
+        });
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
+    private void handleFault(BackendlessFault fault) {
+        String msg = "Server reported an error " + fault.getMessage();
+        Log.e("MYAPP", msg);
+        status.setText(msg);
+        updateButton.setEnabled(true);
+    }
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
+    private void changeSavedValue(Map response) {
+        TextView savedValueTextView = (TextView) findViewById(R.id.saved_value);
+        savedValueTextView.setText((String) response.get("foo"));
     }
 }
