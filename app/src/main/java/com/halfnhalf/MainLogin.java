@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+//TODO CHANGE IDENTIFIER TO EMAIL IN BACKEND (TABLE SCHEMA)
 
 public class MainLogin extends Activity {
 
@@ -121,6 +122,8 @@ public class MainLogin extends Activity {
                 + "UserId: " + user.getUserId() + "\n"
                 + "Email: " + user.getEmail() + "\n"
                 + "Properties: " + "\n";
+                //+ "Profile Data" + user.getProperty("profileData");
+        String userStoreData = (String)user.getProperty("profileData");
 
         for (Map.Entry<String, Object> entry : user.getProperties().entrySet())
             msg += entry.getKey() + " : " + entry.getValue() + "\n";
@@ -128,6 +131,7 @@ public class MainLogin extends Activity {
 
         Intent intent = new Intent(this, LoginResult.class);
         intent.putExtra(LoginResult.userInfo_key, msg);
+        intent.putExtra(LoginResult.store_key, userStoreData);
         intent.putExtra(LoginResult.logoutButtonState_key, true);
         startActivity(intent);
     }
@@ -166,6 +170,7 @@ public class MainLogin extends Activity {
 
     private void onRegisterLinkClicked()
     {
+        Displayer.toaster("Register Button Clicked", "3", getApplicationContext());
         startActivity( new Intent( this, RegisterActivity.class ) );
     }
 

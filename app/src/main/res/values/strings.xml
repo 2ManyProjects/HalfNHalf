@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Login example</string>
+    <string name="app_name">Half N Half</string>
     <string name="btn_LoginBackendless">Log in</string>
     <string name="btn_LogoutBackendless">Logout from Backendless</string>
     <string name="btn_LoginFacebook">Login in Facebook</string>

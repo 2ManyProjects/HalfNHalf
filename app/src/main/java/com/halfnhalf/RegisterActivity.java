@@ -16,6 +16,9 @@ import com.backendless.BackendlessUser;
 import com.backendless.async.callback.AsyncCallback;
 import com.backendless.exceptions.BackendlessFault;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class RegisterActivity extends Activity {
     private final static java.text.SimpleDateFormat SIMPLE_DATE_FORMAT = new java.text.SimpleDateFormat("yyyy/MM/dd");
 
@@ -27,6 +30,7 @@ public class RegisterActivity extends Activity {
     private String name;
     private String email;
     private String password;
+    private String profileData;
 
     private BackendlessUser user;
 
@@ -57,23 +61,29 @@ public class RegisterActivity extends Activity {
         String passwordText = passwordField.getText().toString().trim();
 
         if (emailText.isEmpty()) {
-            Toast.makeText(this, "Field 'email' cannot be empty.", Toast.LENGTH_SHORT).show();
+            Displayer.toaster("Field 'email' cannot be empty.", "s", this);
             return;
-        } else
+        }else if(!isEmailValid(emailText)){
+            Displayer.toaster("'email' must be a valid address.", "s", this);
+            return;
+        }else {
             email = emailText;
-
+        }
         if (passwordText.isEmpty()) {
             Toast.makeText(this, "Field 'password' cannot be empty.", Toast.LENGTH_SHORT).show();
             return;
-        }
-        else
+        }else if(!isPasswordValid(passwordText)){
+            Displayer.toaster("Passwords must be atleast 6 characters long with a Capital, number and special character, Passphrases need to be atleast 12 characters long, with no special requirements", "s", this);
+            return;
+        }else{
             password = passwordText;
+        }
 
         if (!nameText.isEmpty()) {
             name = nameText;
         }
 
-        BackendlessUser user = new BackendlessUser();
+        user = new BackendlessUser();
 
         if (email != null) {
             user.setEmail(email);
@@ -86,8 +96,9 @@ public class RegisterActivity extends Activity {
         if (name != null) {
             user.setProperty("name", name);
         }
-
-
+        profileData = new String(name + "#" + email + "#" + Integer.toString(0) + "#" + Integer.toString(0) + "#");
+        user.setProperty("profileData", profileData);
+        Displayer.toaster("Attempting Register: " + profileData, "s", this);
         Backendless.UserService.register(user, new AsyncCallback<BackendlessUser>() {
             @Override
             public void handleResponse(BackendlessUser response) {
@@ -108,5 +119,30 @@ public class RegisterActivity extends Activity {
                 dialog.show();
             }
         });
+    }
+
+    private boolean isPasswordValid(String newPassword) {
+        //TODO: REMOVE THIS
+        if(newPassword.equals("test"))
+            return true;
+        if(newPassword.length() >= 12)
+            return true;
+        return newPassword.length()>= 6 && isValidPass(newPassword);
+    }
+
+    public static boolean isValidPass(final String password) {
+
+        Pattern pattern;
+        Matcher matcher;
+        final String PASSWORD_PATTERN = "^(?=.*[0-9])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+$).{4,}$";
+        pattern = Pattern.compile(PASSWORD_PATTERN);
+        matcher = pattern.matcher(password);
+
+        return matcher.matches();
+
+    }
+
+    boolean isEmailValid(CharSequence email) {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches();
     }
 }

@@ -16,8 +16,10 @@ import com.backendless.exceptions.BackendlessFault;
 
 
 public class LoginResult extends Activity {
+    public static Profile userProfile = new Profile();
     static final String userInfo_key = "BackendlessUserInfo";
     static final String logoutButtonState_key = "LogoutButtonState";
+    static final String store_key = "";
 
     private EditText backendlessUserInfo;
     private Button bkndlsLogoutButton;
@@ -34,6 +36,7 @@ public class LoginResult extends Activity {
 
         Intent intent = getIntent();
         String message = intent.getStringExtra(userInfo_key);
+        userProfile.setUserData(intent.getStringExtra(store_key));
         message = message == null ? "" : message;
         boolean logoutButtonState = intent.getBooleanExtra(logoutButtonState_key, true);
 
@@ -46,6 +49,7 @@ public class LoginResult extends Activity {
             backendlessUserInfo.setTextColor(ResourcesCompat.getColor(getResources(), android.R.color.holo_red_dark, null));
         }
         backendlessUserInfo.setText(message);
+        Displayer.toaster(userProfile.getUserData(), "5", getApplicationContext());
     }
 
     private void initUI() {
@@ -75,7 +79,7 @@ public class LoginResult extends Activity {
             @Override
             public void handleFault(BackendlessFault fault) {
                 backendlessUserInfo.setTextColor(ResourcesCompat.getColor(getResources(), android.R.color.holo_red_dark, null));
-                backendlessUserInfo.setText(fault.toString());
+                backendlessUserInfo.setText(fault.toString() + "This is the fault");
             }
         });
     }
