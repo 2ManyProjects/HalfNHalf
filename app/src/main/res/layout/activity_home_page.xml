@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".HomePage">
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fab_profileBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:src="@android:drawable/btn_star_big_on"
+        app:elevation="4dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/textView_TitleUserInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/textView_TitleUserInfo"
+            android:textSize="14sp"
+            android:textStyle="normal|bold"
+            tools:layout_editor_absoluteX="6dp" />
+
+        <TextView
+            android:id="@+id/textView_UserInfo"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:ems="10"
+            android:inputType="none"
+            android:lines="9"
+            android:scrollIndicators="top|bottom"
+            android:scrollbarAlwaysDrawVerticalTrack="true"
+            android:scrollbars="vertical"
+            android:text="@string/textView_UserInfo"
+            android:textColor="@android:color/holo_red_dark"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/button_Logout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:enabled="true"
+            android:text="@string/btn_LogoutBackendless"
+            android:visibility="invisible" />
+
+
+    </LinearLayout>
+</android.support.constraint.ConstraintLayout>

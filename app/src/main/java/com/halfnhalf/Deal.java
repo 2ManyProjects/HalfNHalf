@@ -1,17 +1,15 @@
 package com.halfnhalf;
 
 public class Deal {
-    private double rate;
-    private String text;
-    private int Amnt;
+    private String rate, text, Amnt;
 
-    public void create(double rate, String text, int amnt){
+    public void create(String rate, String text, String amnt){
         this.rate = rate;
         this.text = text;
         this.Amnt = amnt;
 
     }
-    public double getRate() {
+    public String getRate() {
         return rate;
     }
 
@@ -19,7 +17,7 @@ public class Deal {
         return text;
     }
 
-    public int getAmnt() {
+    public String getAmnt() {
         return Amnt;
     }
 

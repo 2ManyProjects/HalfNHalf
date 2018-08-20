@@ -35,7 +35,7 @@ public class MainLogin extends Activity {
     // backendless
     private TextView registerLink, restoreLink;
     private EditText identityField, passwordField;
-    private Button bkndlsLoginButton;
+    private Button LoginButton;
 
 
     @Override
@@ -63,7 +63,7 @@ public class MainLogin extends Activity {
                                 super.handleResponse(currentUser);
                                 isLoggedInBackendless = true;
                                 Backendless.UserService.setCurrentUser(currentUser);
-                                startLoginResult(currentUser);
+                                startHomePage(currentUser);
                             }
                         });
                     }
@@ -82,14 +82,14 @@ public class MainLogin extends Activity {
         restoreLink = (TextView) findViewById( R.id.restoreLink );
         identityField = (EditText) findViewById( R.id.identityField );
         passwordField = (EditText) findViewById( R.id.passwordField );
-        bkndlsLoginButton = (Button) findViewById( R.id.bkndlsLoginButton);
+        LoginButton = (Button) findViewById( R.id.LoginButton);
 
     }
 
     private void initUIBehaviour() {
 
         // backendless
-        bkndlsLoginButton.setOnClickListener(new View.OnClickListener()
+        LoginButton.setOnClickListener(new View.OnClickListener()
         {
             @Override
             public void onClick( View view )
@@ -116,7 +116,7 @@ public class MainLogin extends Activity {
 
     }
 
-    private void startLoginResult(BackendlessUser user)
+    private void startHomePage(BackendlessUser user)
     {
         String msg = "ObjectId: " + user.getObjectId() + "\n"
                 + "UserId: " + user.getUserId() + "\n"
@@ -126,21 +126,20 @@ public class MainLogin extends Activity {
         String userStoreData = (String)user.getProperty("profileData");
 
         for (Map.Entry<String, Object> entry : user.getProperties().entrySet())
-            msg += entry.getKey() + " : " + entry.getValue() + "\n";
+            msg.concat(entry.getKey() + " : " + entry.getValue() + "\n");
 
 
-        Intent intent = new Intent(this, LoginResult.class);
-        intent.putExtra(LoginResult.userInfo_key, msg);
-        intent.putExtra(LoginResult.store_key, userStoreData);
-        intent.putExtra(LoginResult.logoutButtonState_key, true);
+        Intent intent = new Intent(this, HomePage.class);
+        intent.putExtra(HomePage.userInfo_key, msg);
+        intent.putExtra(HomePage.store_key, userStoreData);
+        intent.putExtra(HomePage.logoutButtonState_key, true);
         startActivity(intent);
     }
 
-    private void startLoginResult(String msg, boolean logoutButtonState)
-    {
-        Intent intent = new Intent(this, LoginResult.class);
-        intent.putExtra(LoginResult.userInfo_key, msg);
-        intent.putExtra(LoginResult.logoutButtonState_key, logoutButtonState);
+    private void startHomePage(String msg, boolean logoutButtonState){
+        Intent intent = new Intent(this, HomePage.class);
+        intent.putExtra(HomePage.userInfo_key, msg);
+        intent.putExtra(HomePage.logoutButtonState_key, logoutButtonState);
         startActivity(intent);
     }
 
@@ -153,17 +152,16 @@ public class MainLogin extends Activity {
 
         Backendless.UserService.login( identity, password, new DefaultCallback<BackendlessUser>( MainLogin.this )
         {
-            public void handleResponse( BackendlessUser backendlessUser )
-            {
+            public void handleResponse( BackendlessUser backendlessUser ) {
                 super.handleResponse( backendlessUser );
                 isLoggedInBackendless = true;
-                startLoginResult(backendlessUser);
+                startHomePage(backendlessUser);
             }
 
             @Override
             public void handleFault(BackendlessFault fault) {
                 super.handleFault(fault);
-                startLoginResult(fault.toString(), false);
+                startHomePage(fault.toString(), false);
             }
         }, rememberLogin );
     }
