@@ -54,13 +54,6 @@ public class Profile extends AppCompatActivity {
                 (ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT | ItemTouchHelper.DOWN
                         | ItemTouchHelper.UP, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
 
-            /**
-             * Method that defines the drag and drop functionality
-             * @param recyclerView The RecyclerView that contains the list items
-             * @param viewHolder The StoreViewHolder that is being moved
-             * @param target The StoreViewHolder that you are switching the original one with.
-             * @return returns true if the item was moved, false otherwise
-             */
             @Override
             public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder,
                                   RecyclerView.ViewHolder target) {
@@ -75,11 +68,6 @@ public class Profile extends AppCompatActivity {
                 return true;
             }
 
-            /**
-             * Method that defines the swipe to dismiss functionality
-             * @param viewHolder The viewholder being swiped
-             * @param direction The direction it is swiped in
-             */
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
 
@@ -96,13 +84,15 @@ public class Profile extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 addStore("asasfasf" + Integer.toString(numStores), "Wally's Mart");
-                Displayer.toaster("Clicked", "l", Profile.this);
+
+                Displayer.toaster(Integer.toString(Profileadapter.getItemCount()), "l", Profile.this);
                 //testInterupt().show();
             }
         });
         Bundle bundle = getIntent().getExtras();
         if(bundle != null){
             this.userData = bundle.getString("String");
+            Displayer.toaster(userData, "l", this);
             init();
         }else{
             Displayer.toaster("Error getting user Data", "l", this);
@@ -142,7 +132,7 @@ public class Profile extends AppCompatActivity {
 
     public void addStore(String ID, String Name) {
         if (Profiledataset.size() < 1) {
-            Store temp = new Store(ID, Name, ImageResources.getResourceId(numStores,0));
+            Store temp = new Store(ID, Name, ImageResources.getResourceId((numStores % 10),0));
             Profiledataset.add(temp);
             Profileadapter.notifyDataSetChanged();
             numStores += 1;
@@ -158,7 +148,7 @@ public class Profile extends AppCompatActivity {
             if (found) {
                 return;
             } else {
-                Store temp = new Store(ID, Name, ImageResources.getResourceId(numStores,0));
+                Store temp = new Store(ID, Name, ImageResources.getResourceId((numStores % 10),0));
                 Profiledataset.add(temp);
                 Profileadapter.notifyDataSetChanged();
                 numStores += 1;

@@ -1,7 +1,6 @@
 package com.halfnhalf;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class Store {
     public ArrayList<Deal> storeDeals = new ArrayList();
@@ -14,7 +13,9 @@ public class Store {
         this.name = str;
         this.imageResource = imageResource;
     }
-
+    public ArrayList<Deal> getData(){
+        return this.storeDeals;
+    }
     public String getName() {
         return name;
     }
@@ -28,14 +29,12 @@ public class Store {
     }
 
     public void addDeal(String rate, String txt, String amount) {
-        Deal temp = new Deal();
-        temp.create(rate, txt, amount);
+        Deal temp = new Deal(rate, txt, amount);
         storeDeals.add(temp);
     }
 
     public void changeDeal(int index, String rate, String txt, String amount ) {
-        Deal temp = storeDeals.get(index);
-        temp.create(rate, txt, amount);
+        Deal temp = new Deal(rate, txt, amount);
         storeDeals.set(index, temp);
     }
 

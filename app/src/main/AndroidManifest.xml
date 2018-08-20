@@ -14,25 +14,28 @@
         <activity
             android:name=".MainLogin"
             android:label="@string/app_name"
-            android:launchMode= "singleInstance">
+            android:launchMode="singleInstance">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".RestorePasswordActivity"
-            android:launchMode= "singleInstance"/>
-        <activity android:name=".RegisterActivity"
-            android:launchMode= "singleInstance"/>
+        <activity
+            android:name=".RestorePasswordActivity"
+            android:launchMode="singleInstance" />
+        <activity
+            android:name=".RegisterActivity"
+            android:launchMode="singleInstance" />
         <activity
             android:name=".HomePage"
             android:label="@string/title_activity_home_page"
-            android:launchMode= "singleInstance"/>
+            android:launchMode="singleInstance" />
         <activity
             android:name=".Profile"
             android:label="Profile Page"
-            android:launchMode= "singleInstance"/>
+            android:launchMode="singleInstance" />
+        <activity android:name=".storeDeals"></activity>
     </application>
 
 </manifest>
