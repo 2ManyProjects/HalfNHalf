@@ -1,5 +1,7 @@
 package com.halfnhalf;
 
+import android.content.Context;
+import android.content.Intent;
 import android.content.res.TypedArray;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -11,6 +13,11 @@ import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.View;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Array;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -25,10 +32,61 @@ public class Profile extends AppCompatActivity {
 
     public static RecyclerView.Adapter Profileadapter;
     private RecyclerView.LayoutManager ProfilelayoutManager;
-    private RecyclerView ProfilerecyclerView;
+    private static RecyclerView ProfilerecyclerView;
     public static ArrayList<Store> Profiledataset;
     private TypedArray ImageResources;
     private FloatingActionButton add;
+    static View.OnClickListener myOnClickListener;
+   // private ArrayList<Deal> dealData;
+
+
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 1) {
+            if(resultCode == RESULT_OK) {
+                //dealData = new ArrayList<>();
+                Bundle bundle = data.getExtras();
+                String ID = bundle.getString("id");
+                String getDeals = bundle.getString("Deals");
+                boolean isChanged = bundle.getBoolean("isChanged");
+                Gson gson = new Gson();
+                Type type = new TypeToken<ArrayList<Deal>>() {
+                }.getType();
+                ArrayList<Deal> dealData = gson.fromJson(getDeals, type);
+                if(isChanged) {
+                    String getRemoved = bundle.getString("removedID");
+                    Gson mgson = new Gson();
+                    Type mtype = new TypeToken<ArrayList<String>>() {
+                    }.getType();
+                    ArrayList<String> isRemoved = mgson.fromJson(getRemoved, mtype);
+                    fillStore(dealData, ID, isRemoved);
+                }
+            }
+        }
+    }
+
+    private void fillStore(ArrayList<Deal> dealData, String id, ArrayList<String> removed){
+        int index = -1;
+        for(int i = 0; i < Profiledataset.size(); i++){
+            if(Profiledataset.get(i).getID().equals(id)){
+                index = i;
+                break;
+            }
+        }
+//        Displayer.toaster("Deals: " + Integer.toString(dealData.size()) + " ID: " + id, "h", this);
+        if(index == -1){
+            return;
+        }else{
+            for(int i = 0; i < Profiledataset.get(index).getData().size(); i++){
+                if(removed.contains(Profiledataset.get(index).getData(i).getId())) {
+                    Profiledataset.get(index).getData().remove(i);
+                }
+            }
+            for(int i = 0; i < dealData.size(); i++){
+                Profiledataset.get(index).changeDeal(i, dealData.get(i).getRate(), dealData.get(i).getText(), dealData.get(i).getAmnt(), dealData.get(i).getId());
+            }
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +94,7 @@ public class Profile extends AppCompatActivity {
         setContentView(R.layout.activity_profile);
         Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(myToolbar);
+        myOnClickListener = new MyOnClickListener(this);
 
         ProfilerecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         ProfilerecyclerView.setHasFixedSize(true);
@@ -84,8 +143,6 @@ public class Profile extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 addStore("asasfasf" + Integer.toString(numStores), "Wally's Mart");
-
-                Displayer.toaster(Integer.toString(Profileadapter.getItemCount()), "l", Profile.this);
                 //testInterupt().show();
             }
         });
@@ -179,6 +236,30 @@ public class Profile extends AppCompatActivity {
 
         //Notify the adapter of the change
         Profileadapter.notifyDataSetChanged();
+    }
+
+    private class MyOnClickListener implements View.OnClickListener {
+
+        private final Context context;
+
+        private MyOnClickListener(Context context) {
+            this.context = context;
+        }
+
+        @Override
+        public void onClick(View v) {
+            launch(v);
+            return;
+        }
+        private void launch(View v){
+            int selectedItemPosition = ProfilerecyclerView.getChildPosition(v);
+            Store mCurrentStore = Profiledataset.get(selectedItemPosition);
+            String storeData = new Gson().toJson(mCurrentStore);
+            Intent intent;
+            intent = new Intent(context, storeDeals.class);
+            intent.putExtra("Store", storeData);
+            startActivityForResult(intent, 1);
+        }
     }
 
 }

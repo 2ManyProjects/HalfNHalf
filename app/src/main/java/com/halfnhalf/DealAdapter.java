@@ -38,7 +38,7 @@ public class DealAdapter extends RecyclerView.Adapter<DealAdapter.MyViewHolder> 
         return dataSet.size();
     }
 
-    public static class MyViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
+    public static class MyViewHolder extends RecyclerView.ViewHolder{
         //Member Variables for the holder data
         private TextView mWarning;
         private TextView mRate;
@@ -58,29 +58,29 @@ public class DealAdapter extends RecyclerView.Adapter<DealAdapter.MyViewHolder> 
             mContext = context;
 
             //Set the OnClickListener to the whole view
-            itemView.setOnClickListener(this);
+            itemView.setOnClickListener(storeDeals.myOnClickListener);
         }
 
         void bindTo(Deal currentDeal){
             //Populate the textviews with data
-            mWarning.setText("Warning");
-            mRate.setText("Rate");
-            mAmnt.setText("Amnt");
+            mWarning.setText(currentDeal.getText());
+            mRate.setText(currentDeal.getRate() + "%");
+            mAmnt.setText(currentDeal.getAmnt());
 
             //Get the current sport
             mCurrentDeal = currentDeal;
         }
 
-        @Override
-        public void onClick(View view) {
-
-//            //Set up the detail intent
-//            Intent detailIntent = Sport.starter(mContext, mCurrentSport.getTitle(),
-//                    mCurrentSport.getImageResource());
+//        @Override
+//        public void onClick(View view) {
 //
-//
-//            //Start the detail activity
-//            mContext.startActivity(detailIntent);
-        }
+////            //Set up the detail intent
+////            Intent detailIntent = Sport.starter(mContext, mCurrentSport.getTitle(),
+////                    mCurrentSport.getImageResource());
+////
+////
+////            //Start the detail activity
+////            mContext.startActivity(detailIntent);
+//        }
     }
 }

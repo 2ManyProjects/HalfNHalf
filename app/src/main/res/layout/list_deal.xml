@@ -22,22 +22,22 @@
     android:layout_margin="@dimen/card_margin"
     android:background="?android:selectableItemBackground">
 
-    <android.support.constraint.ConstraintLayout
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="138dp">
 
         <TextView
             android:id="@+id/warning"
-            style="@style/TextAppearance.AppCompat.Headline"
+            style="@style/TextAppearance.AppCompat.Subhead"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="15dp"
             android:padding="@dimen/card_margin"
-            android:text="@string/title_placeholder"
+            android:text="@string/sports_info_placeholder"
             android:theme="@style/ThemeOverlay.AppCompat.Dark"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
+            android:textColor="@color/colorWarning"
             tools:text="testwarn" />
 
         <TextView
@@ -45,12 +45,10 @@
             style="@style/TextAppearance.AppCompat.Subhead"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
+            android:layout_centerInParent="true"
             android:padding="@dimen/card_margin"
             android:text="@string/sports_info_placeholder"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/warning"
+            android:textColor="?android:textColorPrimary"
             tools:text="testRate" />
 
         <TextView
@@ -58,14 +56,13 @@
             style="@style/TextAppearance.AppCompat.Subhead"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="20dp"
             android:padding="@dimen/card_margin"
-            android:text="@string/news_label"
+            android:text="@string/sports_info_placeholder"
             android:textColor="?android:textColorSecondary"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/rate"
             tools:text="testAmnt" />
 
-    </android.support.constraint.ConstraintLayout>
+    </RelativeLayout>
 </android.support.v7.widget.CardView>

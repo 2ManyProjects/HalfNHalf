@@ -45,7 +45,7 @@ public class StoreAdapter extends RecyclerView.Adapter<StoreAdapter.MyViewHolder
         return dataSet.size();
     }
 
-    public static class MyViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
+    public static class MyViewHolder extends RecyclerView.ViewHolder{
         //Member Variables for the holder data
         private TextView mTitleText;
         private TextView mInfoText;
@@ -66,7 +66,7 @@ public class StoreAdapter extends RecyclerView.Adapter<StoreAdapter.MyViewHolder
             mGradientDrawable = gradientDrawable;
 
             //Set the OnClickListener to the whole view
-            itemView.setOnClickListener(this);
+            itemView.setOnClickListener(Profile.myOnClickListener);
         }
 
         void bindTo(Store currentStore){
@@ -84,17 +84,17 @@ public class StoreAdapter extends RecyclerView.Adapter<StoreAdapter.MyViewHolder
                     getImageResource()).placeholder(mGradientDrawable).into(mStoreImage);
         }
 
-        @Override
-        public void onClick(View view) {
-            launch();
-        }
+//        @Override
+//        public void onClick(View view) {
+//            launch();
+//        }
 
-        private void launch(){
-            String storeData = new Gson().toJson(mCurrentStore);
-            Intent intent;
-            intent = new Intent(mContext, storeDeals.class);
-            intent.putExtra("Store", storeData);
-            mContext.startActivity(intent);
-        }
+//        private void launch(){
+//            String storeData = new Gson().toJson(mCurrentStore);
+//            Intent intent;
+//            intent = new Intent(mContext, storeDeals.class);
+//            intent.putExtra("Store", storeData);
+//            mContext.startActivity(intent);
+//        }
     }
 }
