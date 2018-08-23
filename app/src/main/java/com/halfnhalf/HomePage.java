@@ -17,7 +17,7 @@ import com.backendless.exceptions.BackendlessFault;
 public class HomePage extends AppCompatActivity {
     static final String userInfo_key = "BackendlessUserInfo";
     static final String logoutButtonState_key = "LogoutButtonState";
-    static final String store_key = "";
+    static String store_key = "";
 
     private TextView UserInfo;
     private Button LogoutButton;
@@ -57,10 +57,13 @@ public class HomePage extends AppCompatActivity {
     }
 
     private void launch(){
+        Bundle bundle = getIntent().getExtras();
+        String password = bundle.getString("password");
         Intent i = getIntent();
         Intent intent;
         intent = new Intent(this, Profile.class);
-        intent.putExtra("String", i.getStringExtra(store_key));
+        intent.putExtra("String", bundle.getString("data"));
+        intent.putExtra("password", password);
         startActivity(intent);
     }
     private void initUI() {

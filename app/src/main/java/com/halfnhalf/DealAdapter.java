@@ -53,7 +53,7 @@ public class DealAdapter extends RecyclerView.Adapter<DealAdapter.MyViewHolder> 
             //Initialize the views
             mWarning = (TextView)itemView.findViewById(R.id.warning);
             mRate = (TextView)itemView.findViewById(R.id.rate);
-            mAmnt = (TextView)itemView.findViewById(R.id.amnt);
+            mAmnt = (TextView)itemView.findViewById(R.id.Address);
 
             mContext = context;
 
@@ -70,17 +70,5 @@ public class DealAdapter extends RecyclerView.Adapter<DealAdapter.MyViewHolder> 
             //Get the current sport
             mCurrentDeal = currentDeal;
         }
-
-//        @Override
-//        public void onClick(View view) {
-//
-////            //Set up the detail intent
-////            Intent detailIntent = Sport.starter(mContext, mCurrentSport.getTitle(),
-////                    mCurrentSport.getImageResource());
-////
-////
-////            //Start the detail activity
-////            mContext.startActivity(detailIntent);
-//        }
     }
 }

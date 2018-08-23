@@ -6,13 +6,17 @@ public class Store {
     public ArrayList<Deal> storeDeals = new ArrayList();
     private String ID;
     private String name;
+    private String address;
     private int imageResource;
 
-    Store(String id, String str, int imageResource){
+    Store(String id, String str, String address, int imageResource){
         this.ID = id;
         this.name = str;
+        this.address = address;
         this.imageResource = imageResource;
     }
+
+
     public ArrayList<Deal> getData(){
         return this.storeDeals;
     }
@@ -21,6 +25,10 @@ public class Store {
     }
     public String getName() {
         return name;
+    }
+
+    public String getAddress() {
+        return address;
     }
 
     public String getID() {

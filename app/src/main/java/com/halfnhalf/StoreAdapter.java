@@ -49,6 +49,7 @@ public class StoreAdapter extends RecyclerView.Adapter<StoreAdapter.MyViewHolder
         //Member Variables for the holder data
         private TextView mTitleText;
         private TextView mInfoText;
+        private TextView mAddress;
         private ImageView mStoreImage;
         private Context mContext;
         private Store mCurrentStore;
@@ -60,6 +61,7 @@ public class StoreAdapter extends RecyclerView.Adapter<StoreAdapter.MyViewHolder
             //Initialize the views
             mTitleText = (TextView)itemView.findViewById(R.id.title);
             mInfoText = (TextView)itemView.findViewById(R.id.deals);
+            mAddress = (TextView)itemView.findViewById(R.id.Address);
             mStoreImage = (ImageView)itemView.findViewById(R.id.storeImage);
 
             mContext = context;
@@ -72,6 +74,7 @@ public class StoreAdapter extends RecyclerView.Adapter<StoreAdapter.MyViewHolder
         void bindTo(Store currentStore){
             //Populate the textviews with data
             mTitleText.setText(currentStore.getName());
+            mAddress.setText(currentStore.getAddress());
             mInfoText.setText(currentStore.getID());
 
             //Get the current sport
@@ -83,18 +86,5 @@ public class StoreAdapter extends RecyclerView.Adapter<StoreAdapter.MyViewHolder
             Glide.with(mContext).load(currentStore.
                     getImageResource()).placeholder(mGradientDrawable).into(mStoreImage);
         }
-
-//        @Override
-//        public void onClick(View view) {
-//            launch();
-//        }
-
-//        private void launch(){
-//            String storeData = new Gson().toJson(mCurrentStore);
-//            Intent intent;
-//            intent = new Intent(mContext, storeDeals.class);
-//            intent.putExtra("Store", storeData);
-//            mContext.startActivity(intent);
-//        }
     }
 }

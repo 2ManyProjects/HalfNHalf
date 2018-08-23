@@ -17,7 +17,7 @@ import com.backendless.BackendlessUser;
 import com.backendless.async.callback.AsyncCallback;
 import com.backendless.async.callback.BackendlessCallback;
 import com.backendless.exceptions.BackendlessFault;
-
+import com.google.gson.Gson;
 
 
 import java.util.HashMap;
@@ -36,6 +36,7 @@ public class MainLogin extends Activity {
     private TextView registerLink, restoreLink;
     private EditText identityField, passwordField;
     private Button LoginButton;
+    private String testPass;
 
 
     @Override
@@ -63,7 +64,7 @@ public class MainLogin extends Activity {
                                 super.handleResponse(currentUser);
                                 isLoggedInBackendless = true;
                                 Backendless.UserService.setCurrentUser(currentUser);
-                                startHomePage(currentUser);
+                                startHomePage(currentUser,passwordField.getText().toString());
                             }
                         });
                     }
@@ -116,13 +117,13 @@ public class MainLogin extends Activity {
 
     }
 
-    private void startHomePage(BackendlessUser user)
+    private void startHomePage(BackendlessUser user, String password)
     {
         String msg = "ObjectId: " + user.getObjectId() + "\n"
                 + "UserId: " + user.getUserId() + "\n"
                 + "Email: " + user.getEmail() + "\n"
-                + "Properties: " + "\n";
-                //+ "Profile Data" + user.getProperty("profileData");
+                + "LastLogin: " + user.getProperty("lastLogin") + "\n"
+                + "Profile Data: " + user.getProperty("profileData");
         String userStoreData = (String)user.getProperty("profileData");
 
         for (Map.Entry<String, Object> entry : user.getProperties().entrySet())
@@ -130,8 +131,9 @@ public class MainLogin extends Activity {
 
 
         Intent intent = new Intent(this, HomePage.class);
+        intent.putExtra("password", password);
         intent.putExtra(HomePage.userInfo_key, msg);
-        intent.putExtra(HomePage.store_key, userStoreData);
+        intent.putExtra("data", userStoreData);
         intent.putExtra(HomePage.logoutButtonState_key, true);
         startActivity(intent);
     }
@@ -149,13 +151,13 @@ public class MainLogin extends Activity {
         String identity = identityField.getText().toString();
         String password = passwordField.getText().toString();
         boolean rememberLogin = rememberLoginBox.isChecked();
-
+        testPass = password;
         Backendless.UserService.login( identity, password, new DefaultCallback<BackendlessUser>( MainLogin.this )
         {
             public void handleResponse( BackendlessUser backendlessUser ) {
                 super.handleResponse( backendlessUser );
                 isLoggedInBackendless = true;
-                startHomePage(backendlessUser);
+                startHomePage(backendlessUser, testPass);
             }
 
             @Override

@@ -52,7 +52,7 @@
             tools:text="testRate" />
 
         <TextView
-            android:id="@+id/amnt"
+            android:id="@+id/Address"
             style="@style/TextAppearance.AppCompat.Subhead"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

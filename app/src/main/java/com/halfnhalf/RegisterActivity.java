@@ -16,6 +16,8 @@ import com.backendless.BackendlessUser;
 import com.backendless.async.callback.AsyncCallback;
 import com.backendless.exceptions.BackendlessFault;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,7 +33,6 @@ public class RegisterActivity extends Activity {
     private String email;
     private String password;
     private String profileData;
-
     private BackendlessUser user;
 
     public void onCreate(Bundle savedInstanceState) {
