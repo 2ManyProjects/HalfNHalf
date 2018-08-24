@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#fff"
-    tools:context=".storeDeals">
+    tools:context=".store.storeDeals">
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/addDeal"
@@ -34,7 +34,7 @@
         android:background="#fff"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        tools:context=".storeDeals">
+        tools:context=".store.storeDeals">
 
         <android.support.v7.widget.Toolbar
             android:id="@+id/my_toolbar"

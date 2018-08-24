@@ -1,4 +1,4 @@
-package com.halfnhalf;
+package com.halfnhalf.store;
 
 
 public class StoreModel {

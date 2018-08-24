@@ -1,21 +1,31 @@
-package com.halfnhalf;
+package com.halfnhalf.store;
+
+import com.halfnhalf.Deal;
 
 import java.util.ArrayList;
 
 public class Store {
-    public ArrayList<Deal> storeDeals = new ArrayList();
+    public ArrayList<Deal> storeDeals = new ArrayList<Deal>();
     private String ID;
     private String name;
     private String address;
     private int imageResource;
+    private boolean isNew;
 
-    Store(String id, String str, String address, int imageResource){
+    public boolean isNew() {
+        return isNew;
+    }
+
+    public void setNew(boolean aNew) {
+        this.isNew = aNew;
+    }
+
+    public Store(String id, String str, String address, int imageResource){
         this.ID = id;
         this.name = str;
         this.address = address;
         this.imageResource = imageResource;
     }
-
 
     public ArrayList<Deal> getData(){
         return this.storeDeals;

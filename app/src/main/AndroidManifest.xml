@@ -32,8 +32,8 @@
         <activity
             android:name=".Profile"
             android:label="Profile Page"/>
-        <activity android:name=".storeDeals"></activity>
-        <activity android:name=".FindStore"
+        <activity android:name=".store.storeDeals"></activity>
+        <activity android:name=".store.FindStore"
             android:windowSoftInputMode="stateHidden"/>
     </application>
 

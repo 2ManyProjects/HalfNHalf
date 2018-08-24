@@ -22,8 +22,6 @@ public class ResultDistanceMatrix {
             public ValueItem duration;
             @SerializedName("distance")
             public ValueItem distance;
-
-
         }
 
         public class ValueItem {
@@ -31,7 +29,6 @@ public class ResultDistanceMatrix {
             public long value;
             @SerializedName("text")
             public String text;
-
         }
     }
 }

@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:gravity="top|center_vertical|fill_vertical|center_horizontal|fill_horizontal|center"
     android:orientation="vertical"
-    tools:context=".storeDeals" >
+    tools:context=".store.storeDeals" >
 
     <EditText
         android:id="@+id/text"

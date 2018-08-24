@@ -1,4 +1,4 @@
-package com.halfnhalf;
+package com.halfnhalf.store;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -13,7 +13,6 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.helper.ItemTouchHelper;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -25,6 +24,11 @@ import android.widget.TextView;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.halfnhalf.Deal;
+import com.halfnhalf.DealAdapter;
+import com.halfnhalf.Displayer;
+import com.halfnhalf.Profile;
+import com.halfnhalf.R;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -41,7 +45,7 @@ public class storeDeals extends AppCompatActivity{
     private boolean isChanged = false;
     private ArrayList<String> removed = new ArrayList<>();
 
-    static View.OnClickListener myOnClickListener;
+    public static View.OnClickListener myOnClickListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

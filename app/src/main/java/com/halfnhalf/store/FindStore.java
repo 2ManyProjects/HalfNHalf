@@ -1,4 +1,4 @@
-package com.halfnhalf;
+package com.halfnhalf.store;
 
 import android.Manifest;
 import android.annotation.TargetApi;
@@ -22,7 +22,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.google.gson.Gson;
+import com.halfnhalf.APIClient;
+import com.halfnhalf.ApiInterface;
+import com.halfnhalf.PlacesPOJO;
+import com.halfnhalf.Profile;
+import com.halfnhalf.R;
+import com.halfnhalf.ResultDistanceMatrix;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -6,7 +6,7 @@ import java.util.UUID;
 public class Deal implements Serializable {
     private String rate, text, Amnt, id;
 
-    Deal(String rate, String text, String amnt){
+    public Deal(String rate, String text, String amnt){
         this.rate = rate;
         this.text = text;
         this.Amnt = amnt;
@@ -14,7 +14,7 @@ public class Deal implements Serializable {
 
     }
 
-    Deal(String rate, String text, String amnt, String id){
+    public Deal(String rate, String text, String amnt, String id){
         this.rate = rate;
         this.text = text;
         this.Amnt = amnt;

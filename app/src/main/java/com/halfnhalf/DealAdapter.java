@@ -7,6 +7,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.halfnhalf.store.storeDeals;
+
 import java.util.ArrayList;
 
 public class DealAdapter extends RecyclerView.Adapter<DealAdapter.MyViewHolder> {
@@ -15,7 +17,7 @@ public class DealAdapter extends RecyclerView.Adapter<DealAdapter.MyViewHolder> 
 
 
 
-    DealAdapter(Context context, ArrayList<Deal> data) {
+    public DealAdapter(Context context, ArrayList<Deal> data) {
         this.dataSet = data;
         this.mContext = context;
     }

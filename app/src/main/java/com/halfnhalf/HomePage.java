@@ -63,6 +63,7 @@ public class HomePage extends AppCompatActivity {
         Intent intent;
         intent = new Intent(this, Profile.class);
         intent.putExtra("String", bundle.getString("data"));
+        intent.putExtra("objectID", bundle.getString("objectID"));
         intent.putExtra("password", password);
         startActivity(intent);
     }

@@ -1,7 +1,6 @@
-package com.halfnhalf;
+package com.halfnhalf.store;
 
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.drawable.GradientDrawable;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -9,9 +8,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import com.google.gson.Gson;
+
+import com.halfnhalf.Profile;
 
 import com.bumptech.glide.Glide;
+import com.halfnhalf.R;
 
 import java.util.ArrayList;
 
@@ -22,7 +23,7 @@ public class StoreAdapter extends RecyclerView.Adapter<StoreAdapter.MyViewHolder
 
 
 
-    StoreAdapter(Context context, ArrayList<Store> data) {
+    public StoreAdapter(Context context, ArrayList<Store> data) {
         this.dataSet = data;
         this.mContext = context;
     }

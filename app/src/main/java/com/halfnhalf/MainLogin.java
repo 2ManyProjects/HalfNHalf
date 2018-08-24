@@ -131,6 +131,7 @@ public class MainLogin extends Activity {
 
 
         Intent intent = new Intent(this, HomePage.class);
+        intent.putExtra("objectID", user.getObjectId());
         intent.putExtra("password", password);
         intent.putExtra(HomePage.userInfo_key, msg);
         intent.putExtra("data", userStoreData);
