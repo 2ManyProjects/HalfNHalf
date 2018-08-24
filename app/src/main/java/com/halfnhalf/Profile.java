@@ -281,7 +281,7 @@ public class Profile extends AppCompatActivity {
 
                     DataQueryBuilder dataQuery = DataQueryBuilder.create();
                     dataQuery.setWhereClause(whereClause);
-
+                    //TODO For Google to Backend Query, Combine All Google id's into where clause in form "StoreID = 'GoogleID1' OR "StoreID = 'GoogleID2' OR"StoreID = 'GoogleID3' ..."
                     Backendless.Data.of("Stores").find(dataQuery,
                             new AsyncCallback<List<Map>>() {
                                 @Override
