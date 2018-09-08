@@ -1,0 +1,10 @@
+COMMAND=PREDEX_LIBRARY_TO_DEX_ARCHIVE
+FILE.path=C:\Users\ShaivKamat\.gradle\caches\modules-2\files-2.1\io.socket\engine.io-client\1.0.0\45fc6115750f06a9cd5dd71632cb7fc052cd66de\engine.io-client-1.0.0.jar
+FILE.hash=191a5c2d777c22d258d414f94ff96a6620a93a38beec29a63c2c172794c87f0f
+DX_VERSION=1.16
+JUMBO_MODE=true
+OPTIMIZE=true
+DEXER_TOOL=D8
+CACHE_KEY_VERSION=4
+MIN_SDK_VERSION=24
+IS_DEBUGGABLE=false

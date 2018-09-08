@@ -52,7 +52,7 @@
             tools:text="testRate" />
 
         <TextView
-            android:id="@+id/Address"
+            android:id="@+id/Amnt"
             style="@style/TextAppearance.AppCompat.Subhead"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -63,6 +63,17 @@
             android:text="@string/sports_info_placeholder"
             android:textColor="?android:textColorSecondary"
             tools:text="testAmnt" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/msg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignTop="@+id/Amnt"
+            android:layout_marginEnd="14dp"
+            android:clickable="true"
+            app:srcCompat="@android:drawable/ic_dialog_email"
+            app:backgroundTint="@android:color/holo_orange_dark"/>
 
     </RelativeLayout>
 </android.support.v7.widget.CardView>

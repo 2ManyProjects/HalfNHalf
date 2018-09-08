@@ -1,5 +1,6 @@
 <resources>
     <string name="Save">Save Changes</string>
+    <string name="Logout">Logout</string>
 
     <string name="app_name">Half N Half</string>
     <string name="btn_LoginBackendless">Log in</string>
@@ -56,13 +57,7 @@
     <string name="news_label">News</string>
     <string name="sports_info_placeholder">Here is some news</string>
     <string name="sports_image">Sports Image</string>
-    <string name="filler_text">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas
-        vitae semper quam. In a metus ut nisl pharetra hendrerit et a leo. Curabitur nec sapien
-        odio. Vestibulum a mollis felis. Cras molestie felis nibh, ut maximus mauris feugiat
-        tincidunt. Curabitur ultricies eros sed ipsum pulvinar vehicula. Maecenas volutpat,
-        massa sit amet aliquam eleifend, massa lorem tempor sapien, eget finibus massa dolor
-        molestie lorem. Suspendisse at purus mauris. Proin nibh ligula, suscipit vel pharetra
-        posuere, bibendum id lorem.</string>
+
 
     <string-array name="sports_titles">
         <item>Baseball</item>

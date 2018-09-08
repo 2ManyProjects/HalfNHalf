@@ -13,6 +13,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.helper.ItemTouchHelper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -44,6 +45,8 @@ public class storeDeals extends AppCompatActivity{
     private Store store;
     private boolean isChanged = false;
     private ArrayList<String> removed = new ArrayList<>();
+    private int toDisplay;
+    private Toolbar myToolbar;
 
     public static View.OnClickListener myOnClickListener;
 
@@ -51,17 +54,24 @@ public class storeDeals extends AppCompatActivity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_store_deals);
-        Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
-        setSupportActionBar(myToolbar);
-
         myOnClickListener = new MyOnClickListener(this);
 
         Bundle bundle = getIntent().getExtras();
-        String getStore = bundle.getString("Store");
-        Gson gson = new Gson();
-        Type type = new TypeToken<Store>() {
-        }.getType();
-        store = gson.fromJson(getStore, type);
+        if(bundle != null) {
+            String getStore = bundle.getString("Store");
+            toDisplay = bundle.getInt("type");
+            Gson gson = new Gson();
+            Type type = new TypeToken<Store>() {
+            }.getType();
+            store = gson.fromJson(getStore, type);
+            if(toDisplay == 1){
+                myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
+                setSupportActionBar(myToolbar);
+            }
+        }else{
+            Log.e("Error retreiving store data", "");
+            finish();
+        }
 
         DealrecyclerView = (RecyclerView) findViewById(R.id.deal_recycler_view);
         DealrecyclerView.setHasFixedSize(true);
@@ -72,57 +82,60 @@ public class storeDeals extends AppCompatActivity{
 
         Dealdataset = new ArrayList<Deal>();
 
-        Dealadapter = new DealAdapter(storeDeals.this, Dealdataset);
-        DealrecyclerView.setAdapter(Dealadapter);
+        if(toDisplay == 1) {
+            Dealadapter = new DealAdapter(storeDeals.this, Dealdataset, 0);
+            DealrecyclerView.setAdapter(Dealadapter);
+            //Helper class for creating swipe to dismiss and drag and drop functionality
+            ItemTouchHelper helper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback
+                    (ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT | ItemTouchHelper.DOWN
+                            | ItemTouchHelper.UP, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+                @Override
+                public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder,
+                                      RecyclerView.ViewHolder target) {
 
-        //Helper class for creating swipe to dismiss and drag and drop functionality
-        ItemTouchHelper helper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback
-                (ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT | ItemTouchHelper.DOWN
-                        | ItemTouchHelper.UP, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
-            @Override
-            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder,
-                                  RecyclerView.ViewHolder target) {
+                    //Get the from and to position
+                    int from = viewHolder.getAdapterPosition();
+                    int to = target.getAdapterPosition();
 
-                //Get the from and to position
-                int from = viewHolder.getAdapterPosition();
-                int to = target.getAdapterPosition();
-
-                //Swap the items and notify the adapter
-                Collections.swap(Dealdataset, from, to);
-                Dealadapter.notifyItemMoved(from, to);
-                isChanged = true;
-                return true;
-            }
+                    //Swap the items and notify the adapter
+                    Collections.swap(Dealdataset, from, to);
+                    Dealadapter.notifyItemMoved(from, to);
+                    isChanged = true;
+                    return true;
+                }
 
 
-            @Override
-            public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+                @Override
+                public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
 
-                removed.add(Dealdataset.get(viewHolder.getAdapterPosition()).getId());
-                //Remove the item from the dataset
-                Dealdataset.remove(viewHolder.getAdapterPosition());
+                    removed.add(Dealdataset.get(viewHolder.getAdapterPosition()).getId());
+                    //Remove the item from the dataset
+                    Dealdataset.remove(viewHolder.getAdapterPosition());
 
-                //Notify the adapter
-                Dealadapter.notifyItemRemoved(viewHolder.getAdapterPosition());
-                isChanged = true;
-            }
-        });
+                    //Notify the adapter
+                    Dealadapter.notifyItemRemoved(viewHolder.getAdapterPosition());
+                    isChanged = true;
+                }
+            });
+            add = findViewById(R.id.addDeal);
+            add.show();
+            add.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    addDeal().show();
+                }
+            });
+            //Attach the helper to the RecyclerView
+            helper.attachToRecyclerView(DealrecyclerView);
+        }else{
 
-        add = findViewById(R.id.addDeal);
-        add.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View view) {
-                addDeal().show();
-            }
-        });
-        helper.attachToRecyclerView(DealrecyclerView);
+            Dealadapter = new DealAdapter(storeDeals.this, Dealdataset, 1);
+            DealrecyclerView.setAdapter(Dealadapter);
 
+            add = findViewById(R.id.addDeal);
+            add.hide();
+        }
         init();
-
-//        Dealdataset = store.getData();
-//        Dealadapter.notifyDataSetChanged();
-
-        //Attach the helper to the RecyclerView
     }
 
     private void init(){
@@ -141,8 +154,8 @@ public class storeDeals extends AppCompatActivity{
     }
 
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.save:
+        if (item.getItemId() == R.id.save) {
+
                 Intent intent = new Intent(this, Profile.class);
                 String id = store.getID();
                 String dealData = new Gson().toJson(Dealdataset);
@@ -154,10 +167,8 @@ public class storeDeals extends AppCompatActivity{
                 setResult(RESULT_OK,intent);
                 finish();
                 return true;
-
-            default:
-                return super.onOptionsItemSelected(item);
-
+        }else{
+            return super.onOptionsItemSelected(item);
         }
     }
     private class MyOnClickListener implements View.OnClickListener {
@@ -177,8 +188,9 @@ public class storeDeals extends AppCompatActivity{
             int selectedItemPosition = DealrecyclerView.getChildPosition(v);
             Deal mCurrentDeal = Dealdataset.get(selectedItemPosition);
             Displayer.toaster(mCurrentDeal.getId(), "l", context);
-            editDeal(mCurrentDeal, selectedItemPosition).show();
-
+            if(toDisplay == 1) {
+                editDeal(mCurrentDeal, selectedItemPosition).show();
+            }
         }
     }
     private Dialog addDeal(){

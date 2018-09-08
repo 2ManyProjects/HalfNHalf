@@ -4,8 +4,10 @@ package com.halfnhalf;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
+import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.DatePicker;
@@ -15,8 +17,10 @@ import com.backendless.Backendless;
 import com.backendless.BackendlessUser;
 import com.backendless.async.callback.AsyncCallback;
 import com.backendless.exceptions.BackendlessFault;
+import com.backendless.persistence.DataQueryBuilder;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -103,6 +107,7 @@ public class RegisterActivity extends Activity {
         Backendless.UserService.register(user, new AsyncCallback<BackendlessUser>() {
             @Override
             public void handleResponse(BackendlessUser response) {
+                final BackendlessUser user = response;
                 Resources resources = getResources();
                 String message = String.format(resources.getString(R.string.registration_success_message), resources.getString(R.string.app_name));
 
@@ -110,6 +115,52 @@ public class RegisterActivity extends Activity {
                 builder.setMessage(message).setTitle(R.string.registration_success);
                 AlertDialog dialog = builder.create();
                 dialog.show();
+                HashMap msging = new HashMap();
+                msging.put("Received", "");
+                msging.put("allMsgs", "");
+                Backendless.Persistence.of("Messages").save(msging, new AsyncCallback<Map>() {
+                    @Override
+                    public void handleResponse(Map msg) {
+                        final String id = msg.get("objectId").toString();
+                        Log.e("Message id", "" + id);
+                        String whereClause = "name = " + "'" + name + "'";
+                        DataQueryBuilder dataQuery = DataQueryBuilder.create();
+                        dataQuery.setWhereClause(whereClause);
+                        Backendless.Data.of(BackendlessUser.class).find(dataQuery,
+                                new AsyncCallback<List<BackendlessUser>>() {
+                                    @Override
+                                    public void handleResponse(List<BackendlessUser> foundUser) {
+                                        foundUser.get(0).setProperty("messageID", id);
+                                        Backendless.UserService.update( foundUser.get(0), new AsyncCallback<BackendlessUser>()
+                                        {
+                                            @Override
+                                            public void handleResponse( BackendlessUser backendlessUser )
+                                            {
+                                                Intent intent = new Intent(RegisterActivity.this, MainLogin.class);
+                                                startActivity(intent);
+                                            }
+
+                                            @Override
+                                            public void handleFault( BackendlessFault backendlessFault )
+                                            {
+
+                                            }
+                                        }  );
+                                    }
+
+                                    @Override
+                                    public void handleFault(BackendlessFault fault) {
+                                        Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+                                    }
+                                });
+
+                    }
+
+                    @Override
+                    public void handleFault(BackendlessFault fault) {
+
+                    }
+                });
             }
 
             @Override
@@ -123,7 +174,7 @@ public class RegisterActivity extends Activity {
     }
 
     private boolean isPasswordValid(String newPassword) {
-        //TODO: REMOVE THIS
+        //TODO: REMOVE THIS FOR RELEASE
         if(newPassword.equals("test"))
             return true;
         if(newPassword.length() >= 12)

@@ -24,20 +24,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-//TODO CHANGE IDENTIFIER TO EMAIL IN BACKEND (TABLE SCHEMA)
+//TODO CHANGE IDENTIFIER TO EMAIL IN BACKEND (TABLE SCHEMA) FOR RELEASE
+//TODO CHANGE ENTIRE LOGIN PAGE, FOR PERCENT LAYOUT
 
 public class MainLogin extends Activity {
 
     private boolean isLoggedInBackendless = false;
     private CheckBox rememberLoginBox;
-
+    public static final int DELAY_TIME = 100;
 
     // backendless
     private TextView registerLink, restoreLink;
     private EditText identityField, passwordField;
     private Button LoginButton;
-    private String testPass;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,7 +63,7 @@ public class MainLogin extends Activity {
                                 super.handleResponse(currentUser);
                                 isLoggedInBackendless = true;
                                 Backendless.UserService.setCurrentUser(currentUser);
-                                startHomePage(currentUser,passwordField.getText().toString());
+                                startHomePage(currentUser);
                             }
                         });
                     }
@@ -117,7 +116,7 @@ public class MainLogin extends Activity {
 
     }
 
-    private void startHomePage(BackendlessUser user, String password)
+    private void startHomePage(BackendlessUser user)
     {
         String msg = "ObjectId: " + user.getObjectId() + "\n"
                 + "UserId: " + user.getUserId() + "\n"
@@ -125,6 +124,7 @@ public class MainLogin extends Activity {
                 + "LastLogin: " + user.getProperty("lastLogin") + "\n"
                 + "Profile Data: " + user.getProperty("profileData");
         String userStoreData = (String)user.getProperty("profileData");
+        String messageAddress = (String)user.getProperty("messageID");
 
         for (Map.Entry<String, Object> entry : user.getProperties().entrySet())
             msg.concat(entry.getKey() + " : " + entry.getValue() + "\n");
@@ -132,9 +132,9 @@ public class MainLogin extends Activity {
 
         Intent intent = new Intent(this, HomePage.class);
         intent.putExtra("objectID", user.getObjectId());
-        intent.putExtra("password", password);
         intent.putExtra(HomePage.userInfo_key, msg);
         intent.putExtra("data", userStoreData);
+        intent.putExtra("Msgs", messageAddress);
         intent.putExtra(HomePage.logoutButtonState_key, true);
         startActivity(intent);
     }
@@ -152,19 +152,18 @@ public class MainLogin extends Activity {
         String identity = identityField.getText().toString();
         String password = passwordField.getText().toString();
         boolean rememberLogin = rememberLoginBox.isChecked();
-        testPass = password;
         Backendless.UserService.login( identity, password, new DefaultCallback<BackendlessUser>( MainLogin.this )
         {
             public void handleResponse( BackendlessUser backendlessUser ) {
                 super.handleResponse( backendlessUser );
                 isLoggedInBackendless = true;
-                startHomePage(backendlessUser, testPass);
+                startHomePage(backendlessUser);
             }
 
             @Override
             public void handleFault(BackendlessFault fault) {
-                super.handleFault(fault);
-                startHomePage(fault.toString(), false);
+                Displayer.alertDisplayer("Login Error", " " + fault.toString(), MainLogin.this);
+                Log.e("Login Error", " " + fault.toString());
             }
         }, rememberLogin );
     }
@@ -184,7 +183,6 @@ public class MainLogin extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
 
     }
 }

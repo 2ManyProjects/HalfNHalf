@@ -22,8 +22,13 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.backendless.Backendless;
+import com.backendless.async.callback.AsyncCallback;
+import com.backendless.exceptions.BackendlessFault;
+import com.backendless.persistence.DataQueryBuilder;
 import com.halfnhalf.APIClient;
 import com.halfnhalf.ApiInterface;
+import com.halfnhalf.HomePage;
 import com.halfnhalf.PlacesPOJO;
 import com.halfnhalf.Profile;
 import com.halfnhalf.R;
@@ -31,6 +36,7 @@ import com.halfnhalf.ResultDistanceMatrix;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -40,8 +46,12 @@ import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 
 public class FindStore extends AppCompatActivity {
+    public static RecyclerView.Adapter adapterStores;
+    private RecyclerView.LayoutManager layoutManager;
+    private RecyclerView recyclerView;
 
-
+    private int type = 0;
+    private String storeName;
     private ArrayList<String> permissionsToRequest;
     private ArrayList<String> permissionsRejected = new ArrayList<>();
     private ArrayList<String> permissions = new ArrayList<>();
@@ -51,11 +61,10 @@ public class FindStore extends AppCompatActivity {
 
     String latLngString;
 
-    RecyclerView recyclerView;
     EditText editText;
     Button button;
     List<PlacesPOJO.CustomA> results;
-    Store store;
+
 
     static View.OnClickListener myOnClickListener;
 
@@ -63,8 +72,17 @@ public class FindStore extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_find_store);
+        storeModels = new ArrayList<StoreModel>();
+        Bundle bundle = getIntent().getExtras();
+        if(bundle != null){
+            type = Integer.parseInt(bundle.getString("FindingUsers"));
+            storeName = bundle.getString("StoreName");
+            //init();
+        }else{
+            type = 0;
+        }
 
-        myOnClickListener = new MyOnClickListener(this);
+        myOnClickListener = new MyOnClickListener(this, type);
 
         permissions.add(ACCESS_FINE_LOCATION);
         permissions.add(ACCESS_COARSE_LOCATION);
@@ -92,22 +110,50 @@ public class FindStore extends AppCompatActivity {
         recyclerView.setNestedScrollingEnabled(false);
         recyclerView.setHasFixedSize(true);
 
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
+        adapterStores = new StoreFinderAdapter(storeModels, FindStore.this);
+        recyclerView.setAdapter(adapterStores);
 
         editText = (EditText) findViewById(R.id.editText);
         button = (Button) findViewById(R.id.button);
 
+        if(type == 1){
+            button.setVisibility(View.INVISIBLE);
+            editText.setVisibility(View.INVISIBLE);
+            storeModels.clear();
+            adapterStores.notifyDataSetChanged();
+            latLngString = getLocation(FindStore.this);
+            fetchStores(storeName);
+        }else {
 
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String s = editText.getText().toString().trim();
-                latLngString = getLocation(FindStore.this);
-                fetchStores(s);
+            button.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    storeModels.clear();
+                    adapterStores.notifyDataSetChanged();
+                    String s = editText.getText().toString().trim();
+                    latLngString = getLocation(FindStore.this);
+                    fetchStores(s);
+                }
+            });
+        }
+
+    }
+
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 1) {
+            if (resultCode == RESULT_OK) {
+                //dealData = new ArrayList<>();
+                Bundle bundle = data.getExtras();
+                String userID = bundle.getString("id");
+                Intent intent = new Intent(this, Profile.class);
+                intent.putExtra("id", userID);
+                setResult(RESULT_OK, intent);
+                finish();
             }
-        });
-
+        }
     }
 
     private static String getLocation(Context c){
@@ -163,65 +209,109 @@ public class FindStore extends AppCompatActivity {
     }
 
     private void fetchStores(String businessName) {
-
-        //Call<PlacesPOJO.Root> call = apiService.doPlaces(placeType, latLngString,"\""+ businessName +"\"", true, "distance", APIClient.GOOGLE_PLACE_API_KEY);
-
         Log.v("LAT LONG: ", "Data: " + latLngString);
         if(latLngString == null){
             latLngString = getLocation(FindStore.this);
         }
         Log.v("LAT LONG: ", "2 Data: " + latLngString);
-        Call<PlacesPOJO.Root> call = apiService.doPlaces(latLngString, businessName, true, "distance", APIClient.GOOGLE_PLACE_API_KEY);
+        Call<PlacesPOJO.Root> call = apiService.doPlaces(latLngString, businessName, "distance", APIClient.GOOGLE_PLACE_API_KEY);
         call.enqueue(new Callback<PlacesPOJO.Root>() {
             @Override
             public void onResponse(Call<PlacesPOJO.Root> call, Response<PlacesPOJO.Root> response) {
                 PlacesPOJO.Root root = response.body();
-
-
                 if (response.isSuccessful()) {
 
                     if (root.status.equals("OK")) {
 
                         results = root.customA;
-                        storeModels = new ArrayList<>();
-                        for (int i = 0; i < results.size(); i++) {
+                        if(type == 1) {
+//                            List<PlacesPOJO.CustomA> data = new ArrayList<>();
+                            String WhereClause = "StoreID IN (";
+                            for (int i = 0; i < results.size(); i++) {
+                                if (i == 30) {
+                                    break;
+                                }
+                                PlacesPOJO.CustomA info = results.get(i);
+//                                data.add(info);
+                                WhereClause += "'" + info.id + "'";
+                                if (i == 29 || i == results.size() - 1) {
+                                    WhereClause += ")";
+                                } else {
+                                    WhereClause += ", ";
+                                }
+                            }
+                            filterList(WhereClause);
+                        }else {
+                            for (int i = 0; i < results.size(); i++) {
 
-                            if (i == 10)
-                                break;
-                            PlacesPOJO.CustomA info = results.get(i);
-
-
-                            fetchDistance(info);
-
+                                if (i == 10 && type == 0) {
+                                    break;
+                                } else if (i == 30) {
+                                    break;
+                                }
+                                PlacesPOJO.CustomA info = results.get(i);
+                                fetchDistance(info);
+                            }
                         }
-
                     } else {
                         Toast.makeText(getApplicationContext(), "No matches found near you", Toast.LENGTH_SHORT).show();
                     }
-
                 } else if (response.code() != 200) {
                     Toast.makeText(getApplicationContext(), "Error " + response.code() + " found.", Toast.LENGTH_SHORT).show();
                 }
-
-
             }
-
             @Override
             public void onFailure(Call<PlacesPOJO.Root> call, Throwable t) {
-                // Log error here since request failed
+                Log.e("Google Query Failed: ", "" + t.getMessage());
                 call.cancel();
             }
         });
+    }
 
+    private void filterList(String clause){
+        DataQueryBuilder dataQuery = DataQueryBuilder.create();
+        dataQuery.setWhereClause(clause);
+        Backendless.Data.of("Stores").find(dataQuery,
+                new AsyncCallback<List<Map>>() {
+                    @Override
+                    public void handleResponse(List<Map> foundStore) {
+                        Log.e("STORE EXISTS, COMPILE LIST", " " + foundStore.size() + " R.size" + results.size());
+                        if (foundStore.size() > 0) {
+                            for(int i = 0; i < results.size(); i++){
+                                boolean match = false;
+                                for(int x = 0; x < foundStore.size(); x++){
+                                    if(results.get(i).id.equals(foundStore.get(x).get("StoreID"))){
+                                        match = true;
+                                        break;
+                                    }
+                                }
+                                if(!match){
+                                    results.remove(i);
+                                    i--;
+                                }else{
+                                    PlacesPOJO.CustomA info = results.get(i);
+                                    fetchDistance(info);
+                                }
+                            }
+                            Log.e("STORE EXISTS, COMPILE LIST",  " R.size" + results.size());
+                        }
+                    }
 
+                    @Override
+                    public void handleFault(BackendlessFault fault) {
+                        Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+                    }
+                });
     }
 
     private class MyOnClickListener implements View.OnClickListener {
 
         private final Context context;
+        private int type = 0;
 
-        private MyOnClickListener(Context context) {
+        private MyOnClickListener(Context context, int i) {
             this.context = context;
+            this.type = i;
         }
 
         @Override
@@ -232,15 +322,22 @@ public class FindStore extends AppCompatActivity {
         private void click(View v){
             int selectedItemPosition = recyclerView.getChildPosition(v);
             StoreModel mCurrentStore = storeModels.get(selectedItemPosition);
-            String id = mCurrentStore.id;
-            String name = mCurrentStore.name;
-            String address = mCurrentStore.address;
-            Intent intent = new Intent(context, Profile.class);
-            intent.putExtra("id", id);
-            intent.putExtra("name", name);
-            intent.putExtra("address", address);
-            setResult(RESULT_OK,intent);
-            finish();
+            if(type == 0) {
+                String id = mCurrentStore.id;
+                String name = mCurrentStore.name;
+                String address = mCurrentStore.address;
+                Intent intent = new Intent(context, Profile.class);
+                intent.putExtra("id", id);
+                intent.putExtra("name", name);
+                intent.putExtra("address", address);
+                setResult(RESULT_OK, intent);
+                finish();
+            }else if(type == 1){
+                Intent intent = new Intent(context, HomePage.class);
+                intent.putExtra("StoreID", mCurrentStore.id);
+                setResult(RESULT_OK, intent);
+                finish();
+            }
 
         }
     }
@@ -306,7 +403,6 @@ public class FindStore extends AppCompatActivity {
 
                     latLngString = getLocation(FindStore.this);
                 }
-
                 break;
         }
 
@@ -338,17 +434,10 @@ public class FindStore extends AppCompatActivity {
                         String totalDistance = String.valueOf(itemDistance.text);
                         String totalDuration = String.valueOf(itemDuration.text);
                         storeModels.add(new StoreModel(info.name, info.vicinity, totalDistance, totalDuration, info.id));
-
-
-                        if (storeModels.size() == 10 || storeModels.size() == results.size()) {
-                            StoreFinderAdapter adapterStores = new StoreFinderAdapter(storeModels, FindStore.this);
-                            recyclerView.setAdapter(adapterStores);
-                        }
-
+                        Log.i("Sizes", "StoreM: " + storeModels.size() + " Results: " + results.size());
+                        adapterStores.notifyItemInserted(storeModels.size());
                     }
-
                 }
-
             }
 
             @Override

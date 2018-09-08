@@ -27,6 +27,11 @@ public class Store {
         this.imageResource = imageResource;
     }
 
+    public Store(String id, String str, String address){
+        this.ID = id;
+        this.name = str;
+        this.address = address;
+    }
     public ArrayList<Deal> getData(){
         return this.storeDeals;
     }

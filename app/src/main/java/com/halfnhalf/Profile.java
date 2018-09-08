@@ -43,7 +43,7 @@ import java.util.Map;
 
 public class Profile extends AppCompatActivity {
 
-    private String [] userInfo = {"", "", "", ""};
+    private String [] userInfo = {"", "", ""};
     private int numStores = 0;
     private String userData;
     private String [] arrayData;
@@ -58,6 +58,83 @@ public class Profile extends AppCompatActivity {
     private FloatingActionButton add;
     public static View.OnClickListener myOnClickListener;
     private ArrayList<String> removed;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_profile);
+
+        removed = new ArrayList<>();
+
+        myOnClickListener = new MyOnClickListener(this);
+
+        ProfilerecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+        ProfilerecyclerView.setHasFixedSize(true);
+
+        ProfilelayoutManager = new LinearLayoutManager(this);
+        ProfilerecyclerView.setLayoutManager(ProfilelayoutManager);
+        ProfilerecyclerView.setItemAnimator(new DefaultItemAnimator());
+
+        Profiledataset = new ArrayList<Store>();
+
+        Profileadapter = new StoreAdapter(Profile.this, Profiledataset);
+        ProfilerecyclerView.setAdapter(Profileadapter);
+
+        Bundle bundle = getIntent().getExtras();
+        if(bundle != null){
+            userInfo[2] = getIntent().getStringExtra("objectID");
+            this.userData = bundle.getString("String");
+            init();
+        }else{
+            Displayer.toaster("Error getting user Data", "l", this);
+            finish();
+        }
+        Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
+        setSupportActionBar(myToolbar);
+
+        //Helper class for creating swipe to dismiss and drag and drop functionality
+        ItemTouchHelper helper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback
+                (ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT | ItemTouchHelper.DOWN
+                        | ItemTouchHelper.UP, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+
+            @Override
+            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder,
+                                  RecyclerView.ViewHolder target) {
+
+                //Get the from and to position
+                int from = viewHolder.getAdapterPosition();
+                int to = target.getAdapterPosition();
+
+                //Swap the items and notify the adapter
+                Collections.swap(Profiledataset, from, to);
+                Profileadapter.notifyItemMoved(from, to);
+                return true;
+            }
+
+            @Override
+            public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+                numStores --;
+                //Remove the item from the dataset
+                if(!Profiledataset.get(viewHolder.getAdapterPosition()).isNew()) {
+                    removed.add(Profiledataset.get(viewHolder.getAdapterPosition()).getID());
+                }
+                Profiledataset.remove(viewHolder.getAdapterPosition());
+
+                //Notify the adapter
+                Profileadapter.notifyItemRemoved(viewHolder.getAdapterPosition());
+            }
+        });
+
+        add = findViewById(R.id.addStore);
+        add.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+                findStore();
+            }
+        });
+        //Attach the helper to the RecyclerView
+        helper.attachToRecyclerView(ProfilerecyclerView);
+    }
 
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -147,85 +224,6 @@ public class Profile extends AppCompatActivity {
         });
     }
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_profile);
-
-        removed = new ArrayList<>();
-
-        myOnClickListener = new MyOnClickListener(this);
-
-        ProfilerecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
-        ProfilerecyclerView.setHasFixedSize(true);
-
-        ProfilelayoutManager = new LinearLayoutManager(this);
-        ProfilerecyclerView.setLayoutManager(ProfilelayoutManager);
-        ProfilerecyclerView.setItemAnimator(new DefaultItemAnimator());
-
-        Profiledataset = new ArrayList<Store>();
-
-        Profileadapter = new StoreAdapter(Profile.this, Profiledataset);
-        ProfilerecyclerView.setAdapter(Profileadapter);
-
-        Bundle bundle = getIntent().getExtras();
-        if(bundle != null){
-            userInfo[1] = getIntent().getStringExtra("password");
-            userInfo[3] = getIntent().getStringExtra("objectID");
-            this.userData = bundle.getString("String");
-            Displayer.alertDisplayer("Data", userData,  this);
-            init();
-        }else{
-            Displayer.toaster("Error getting user Data", "l", this);
-            finish();
-        }
-        Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
-        setSupportActionBar(myToolbar);
-
-        //Helper class for creating swipe to dismiss and drag and drop functionality
-        ItemTouchHelper helper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback
-                (ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT | ItemTouchHelper.DOWN
-                        | ItemTouchHelper.UP, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
-
-            @Override
-            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder,
-                                  RecyclerView.ViewHolder target) {
-
-                //Get the from and to position
-                int from = viewHolder.getAdapterPosition();
-                int to = target.getAdapterPosition();
-
-                //Swap the items and notify the adapter
-                Collections.swap(Profiledataset, from, to);
-                Profileadapter.notifyItemMoved(from, to);
-                return true;
-            }
-
-            @Override
-            public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
-                numStores --;
-                //Remove the item from the dataset
-                if(!Profiledataset.get(viewHolder.getAdapterPosition()).isNew()) {
-                    removed.add(Profiledataset.get(viewHolder.getAdapterPosition()).getID());
-                }
-                Profiledataset.remove(viewHolder.getAdapterPosition());
-
-                //Notify the adapter
-                Profileadapter.notifyItemRemoved(viewHolder.getAdapterPosition());
-            }
-        });
-
-        add = findViewById(R.id.addStore);
-        add.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View view) {
-                findStore();
-            }
-        });
-        //Attach the helper to the RecyclerView
-        helper.attachToRecyclerView(ProfilerecyclerView);
-    }
-
     public String getUserData() {
         return userData;
     }
@@ -233,7 +231,7 @@ public class Profile extends AppCompatActivity {
     public void init(){
         arrayData = userData.split("#");
         userInfo[0] = arrayData[0];
-        userInfo[2] = arrayData[1];
+        userInfo[1] = arrayData[1];
         versionNum = Integer.parseInt(arrayData[2]);
         numStores = Integer.parseInt(arrayData[3]);
         populateProfile();
@@ -248,7 +246,7 @@ public class Profile extends AppCompatActivity {
                 Profiledataset.get(p).setNew(false);
             }
         }
-        String temp = userInfo[0] + "#" + userInfo[2] + "#" + Integer.toString(versionNum++) + "#" + Integer.toString(numStores) + "#";
+        String temp = userInfo[0] + "#" + userInfo[1] + "#" + Integer.toString(versionNum++) + "#" + Integer.toString(numStores) + "#";
         for(int i = 0; i < Profiledataset.size(); i++){
             temp += Profiledataset.get(i).getID() + "#" + Profiledataset.get(i).getName() + "#" + fixString(Profiledataset.get(i).getAddress()) + "#" + Integer.toString(Profiledataset.get(i).getData().size()) + "#";
             for(int x = 0; x < Profiledataset.get(i).getDealNum(); x++){
@@ -264,8 +262,8 @@ public class Profile extends AppCompatActivity {
         return temp;
     }
 
-    private void startTimer(ArrayList<String> id, int x, boolean add){
-        final boolean toAdd = add;
+    private void startTimer(ArrayList<String> id, int x, boolean addingStore){
+        final boolean toAdd = addingStore;
         final ArrayList<String> storeID = id;
         final int i = x;
         if(x < id.size()) {
@@ -281,7 +279,6 @@ public class Profile extends AppCompatActivity {
 
                     DataQueryBuilder dataQuery = DataQueryBuilder.create();
                     dataQuery.setWhereClause(whereClause);
-                    //TODO For Google to Backend Query, Combine All Google id's into where clause in form "StoreID = 'GoogleID1' OR "StoreID = 'GoogleID2' OR"StoreID = 'GoogleID3' ..."
                     Backendless.Data.of("Stores").find(dataQuery,
                             new AsyncCallback<List<Map>>() {
                                 @Override
@@ -295,9 +292,9 @@ public class Profile extends AppCompatActivity {
                                         DataQueryBuilder dataQuery = DataQueryBuilder.create();
                                         dataQuery.setWhereClause(whereClause);
                                         if(toAdd){
-                                            Users = foundStore.get(0).get("UserList").toString() + userInfo[3] + "#";
+                                            Users = foundStore.get(0).get("UserList").toString() + userInfo[2] + "#";
                                         }else{
-                                            Users = foundStore.get(0).get("UserList").toString().replaceAll(userInfo[3] + "#", "");
+                                            Users = foundStore.get(0).get("UserList").toString().replaceAll(userInfo[2] + "#", "");
                                         }
                                         Log.e("Users", " : " + Users);
                                         foundStore.get(0).put("UserList", Users);
@@ -335,7 +332,7 @@ public class Profile extends AppCompatActivity {
                                     } else {
                                         HashMap newStore = new HashMap();
                                         newStore.put("StoreID", ID);
-                                        newStore.put("UserList", userInfo[3] + "#");
+                                        newStore.put("UserList", userInfo[2] + "#");
                                         Backendless.Persistence.of("Stores").save(newStore, new AsyncCallback<Map>() {
                                             @Override
                                             public void handleResponse(Map response) {
@@ -357,8 +354,8 @@ public class Profile extends AppCompatActivity {
                             });
                     startTimer(storeID, y, toAdd);
                 }
-            }, 1000);
-        }else if(!add){
+            }, MainLogin.DELAY_TIME);
+        }else if(!addingStore){
             removed.clear();
         }
 
@@ -436,43 +433,39 @@ public class Profile extends AppCompatActivity {
     }
 
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.save:
-                final String temp = createProfile();
-//                Displayer.alertDisplayer("Profile Data", temp, this);
-                Backendless.UserService.login( userInfo[0], userInfo[1], new AsyncCallback<BackendlessUser>()
-                {
-                    @Override
-                    public void handleResponse( BackendlessUser backendlessUser )
-                    {
-                        backendlessUser.setProperty("profileData", temp);
-                        Backendless.UserService.update( backendlessUser, new AsyncCallback<BackendlessUser>()
-                        {
-                            @Override
-                            public void handleResponse( BackendlessUser backendlessUser )
+        if (item.getItemId() == R.id.save) {
+            final String temp = createProfile();
+
+            Backendless.Data.of(BackendlessUser.class).findById(Backendless.UserService.CurrentUser(),
+                    new AsyncCallback<BackendlessUser>() {
+                        @Override
+                        public void handleResponse(BackendlessUser foundUser) {
+                            foundUser.setProperty("profileData", temp);
+                            Backendless.UserService.update( foundUser, new AsyncCallback<BackendlessUser>()
                             {
-                                //Displayer.toaster(backendlessUser.getProperty( "profileData" ).toString(), "l", Profile.this);
-                            }
+                                @Override
+                                public void handleResponse( BackendlessUser backendlessUser )
+                                {
+                                    Log.i("UPDATED PROFILE", " " + temp);
+                                }
 
-                            @Override
-                            public void handleFault( BackendlessFault backendlessFault )
-                            {
+                                @Override
+                                public void handleFault( BackendlessFault backendlessFault )
+                                {
 
-                            }
-                        }  );
-                    }
+                                }
+                            }  );
+                        }
 
-                    @Override
-                    public void handleFault( BackendlessFault backendlessFault )
-                    {
+                        @Override
+                        public void handleFault(BackendlessFault fault) {
+                            Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+                        }
+                    });
+            return true;
 
-                    }
-                });
-                return true;
-
-            default:
-                return super.onOptionsItemSelected(item);
-
+        }else{
+            return super.onOptionsItemSelected(item);
         }
     }
 
@@ -502,6 +495,7 @@ public class Profile extends AppCompatActivity {
             Intent intent;
             intent = new Intent(context, storeDeals.class);
             intent.putExtra("Store", storeData);
+            intent.putExtra("type", 1);
             startActivityForResult(intent, 1);
         }
     }
