@@ -33,6 +33,12 @@
         <activity
             android:name=".store.FindStore"
             android:windowSoftInputMode="stateHidden" />
+        <activity
+            android:name=".Messaging.StartChatActivity"
+            android:windowSoftInputMode="stateHidden" />
+        <activity
+            android:name=".Messaging.ChatRoomActivity"
+            android:windowSoftInputMode="adjustResize"/>
     </application>
 
 </manifest>

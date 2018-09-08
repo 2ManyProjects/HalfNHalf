@@ -28,6 +28,7 @@ import com.backendless.persistence.DataQueryBuilder;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.halfnhalf.Messaging.Message;
+import com.halfnhalf.Messaging.StartChatActivity;
 import com.halfnhalf.store.FindStore;
 import com.halfnhalf.store.Store;
 import com.halfnhalf.store.storeDeals;
@@ -51,6 +52,7 @@ public class HomePage extends AppCompatActivity {
     static String store_key = "";
 
     private FloatingActionButton profile;
+    private FloatingActionButton messenger;
 
     private String storeID;
     private String Userlist;
@@ -59,7 +61,7 @@ public class HomePage extends AppCompatActivity {
     private ArrayList<String []> userProfilesdata;
     private ArrayList<storeSummery> stores;
     private File mPath;
-    private String MsgID;
+    private String MsgID = "";
     private String allMsgs;
     private ArrayList<ArrayList<Message>> Messages;
 
@@ -91,12 +93,13 @@ public class HomePage extends AppCompatActivity {
         }
 
         if(!lastUser()){
-            Log.e("DIFFERENT USER", "DELETING DATA");
-            File temp = new File(getFilesDir() + "/messages/");
-            deleteRecursive(temp);
+            Log.e("DIFFERENT USER", "DELETING DATA");;
+            deleteRecursive(mPath);
             firstLaunch = true;
             mPath.mkdirs();
             getMsgs();
+        }else if(firstLaunch){
+            getNewMsgs(false);
         }
 
         if(!firstLaunch){
@@ -110,7 +113,7 @@ public class HomePage extends AppCompatActivity {
 
             }
             allMsgs = inputString;
-            buildMessages(allMsgs);
+            getNewMsgs(false);
         }
 
 
@@ -119,7 +122,14 @@ public class HomePage extends AppCompatActivity {
         profile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                launch();
+                launch(1);
+            }
+        });
+
+        messenger.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                getNewMsgs(true);
             }
         });
 
@@ -177,6 +187,35 @@ public class HomePage extends AppCompatActivity {
                     {
                         if(response.get("allMsgs") != null) {
                             allMsgs = response.get("allMsgs").toString();
+                            String path = getFilesDir() + "/messages/" + "LastLogin";
+                            try {
+                                BufferedWriter out = new BufferedWriter(new FileWriter(path));
+                                out.write(Backendless.UserService.CurrentUser().getProperty("name").toString());
+                                out.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        getNewMsgs(false);
+                    }
+                    @Override
+                    public void handleFault( BackendlessFault fault )
+                    {
+                        fault.toString();   // an error has occurred, the error code can be retrieved with fault.getCode()
+                    }
+                } );
+    }
+
+    private void getNewMsgs(boolean launch){
+        final boolean tolaunch = launch;
+        Backendless.Data.of("Messages").findById(MsgID,
+                new AsyncCallback<Map>() {
+                    @Override
+                    public void handleResponse( Map response )
+                    {
+                        if(response.get("Received") != null) {
+                            allMsgs += response.get("Received").toString();
+                            Log.e("MSG " + allMsgs, "");
                             String path = getFilesDir() + "/messages/" + "allMsgs";
                             try {
                                 BufferedWriter out = new BufferedWriter(new FileWriter(path));
@@ -185,16 +224,41 @@ public class HomePage extends AppCompatActivity {
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
-                            path = getFilesDir() + "/messages/" + "LastLogin";
-                            try {
-                                BufferedWriter out = new BufferedWriter(new FileWriter(path));
-                                out.write(Backendless.UserService.CurrentUser().getProperty("name").toString());
-                                out.close();
-                            } catch (IOException e) {
-                                e.printStackTrace();
+                        }
+                        response.put("Received", "");
+                        Backendless.Persistence.of("Messages").save( response, new AsyncCallback<Map>() {
+                            @Override
+                            public void handleResponse( Map response )
+                            {
+                                // Contact objecthas been updated
                             }
+                            @Override
+                            public void handleFault( BackendlessFault fault )
+                            {
+                                // an error has occurred, the error code can be retrieved with fault.getCode()
+                            }
+                        } );
+                        if(allMsgs.length() > 6) {
+                            response.put("allMsgs", allMsgs);
+                            Backendless.Persistence.of("Messages").save(response, new AsyncCallback<Map>() {
+                                @Override
+                                public void handleResponse(Map response) {
+                                    // Contact objecthas been updated
+                                }
+
+                                @Override
+                                public void handleFault(BackendlessFault fault) {
+                                    // an error has occurred, the error code can be retrieved with fault.getCode()
+                                }
+                            });
+                        }
+
+                        if(allMsgs != null) {
                             buildMessages(allMsgs);
                         }
+                        if(tolaunch)
+                            launch(2);
+//                            Log.e("TOTAL MSG", "" +allMsgs);
                     }
                     @Override
                     public void handleFault( BackendlessFault fault )
@@ -216,59 +280,82 @@ public class HomePage extends AppCompatActivity {
     }
 
     private void buildMessages(String data){
-        String [] MessageData = data.split("#");
-        for(int i = 0; i < MessageData.length; i++){
-            Message temp = new Message();
-            temp.setData(MessageData[i], MessageData[i + 1]);
-            temp.setText(MessageData[i + 2]);
-            temp.setBelongsToCurrentUser(Backendless.UserService.CurrentUser().getProperty("name").toString().equals(MessageData[i]));
-            if(Messages.size() == 0){
-                ArrayList<Message> tempMessage = new ArrayList<>();
-                tempMessage.add(temp);
-                Messages.add(tempMessage);
-            }else{
-                int index = getIndexofMessage(temp.getData().getSender(), temp.getData().getReceiver());
-                if(index != -1) {
-                    Messages.get(index).add(temp);
-                }else{
+        Messages.clear();
+        if(data.length() > 6) {
+            String[] MessageData = data.split("#");
+            for (int i = 0; i < MessageData.length; i++) {
+//            Log.i("Message Data: ", "" + MessageData[i] + " " +  MessageData[i + 1] + " " +  MessageData[i + 2]);
+                Message temp = new Message();
+                temp.setData(MessageData[i], MessageData[i + 1]);
+                temp.setText(MessageData[i + 2]);
+                temp.setBelongsToCurrentUser(Backendless.UserService.CurrentUser().getProperty("name").toString().equals(MessageData[i]));
+                if (Messages.size() == 0) {
                     ArrayList<Message> tempMessage = new ArrayList<>();
                     tempMessage.add(temp);
                     Messages.add(tempMessage);
+                } else {
+                    int index = getIndexofMessage(temp.getData().getSender(), temp.getData().getReceiver());
+                    Log.i("INDEX: ", "" + index);
+                    if (index != -1) {
+                        Messages.get(index).add(temp);
+                    } else {
+                        ArrayList<Message> tempMessage = new ArrayList<>();
+                        tempMessage.add(temp);
+                        Messages.add(tempMessage);
+                    }
                 }
+                i += 2;
             }
-            i += 2;
         }
     }
 
     private int getIndexofMessage(String sender, String receiver){
         String name = Backendless.UserService.CurrentUser().getProperty("name").toString();
+        Log.i(Messages.size() + " Name:" + name, "Sender: " + sender + " Receiver: " + receiver);
         if(sender.equals(name)){
             for(int i = 0; i < Messages.size(); i++){
-                if(Messages.get(i).get(0).getData().getReceiver().equals(receiver))
+                if(Messages.get(i).get(0).getData().getReceiver().equals(receiver) || Messages.get(i).get(0).getData().getSender().equals(receiver))
                     return i;
             }
         }else{
             for(int i = 0; i < Messages.size(); i++){
-                if(Messages.get(i).get(0).getData().getSender().equals(sender))
+                if(Messages.get(i).get(0).getData().getSender().equals(sender) || Messages.get(i).get(0).getData().getReceiver().equals(sender))
                     return i;
             }
         }
         return -1;
     }
 
-    private void launch(){
-        Bundle bundle = getIntent().getExtras();
-        String password = bundle.getString("password");
-        Intent i = getIntent();
+    private void launch(int x){
         Intent intent;
-        intent = new Intent(this, Profile.class);
-        intent.putExtra("String", bundle.getString("data"));
-        intent.putExtra("objectID", bundle.getString("objectID"));
-        intent.putExtra("password", password);
-        startActivity(intent);
+        switch (x){
+            case 1:
+                Bundle bundle = getIntent().getExtras();
+                String password = bundle.getString("password");
+                Intent i = getIntent();
+                intent = new Intent(this, Profile.class);
+                intent.putExtra("String", bundle.getString("data"));
+                intent.putExtra("objectID", bundle.getString("objectID"));
+                intent.putExtra("password", password);
+                startActivity(intent);
+                break;
+            case 2:
+                String ALLMESSAGES = new Gson().toJson(Messages);
+                intent = new Intent(HomePage.this, StartChatActivity.class);
+                intent.putExtra("MessageData", ALLMESSAGES);
+                intent.putExtra("rawMessage", allMsgs);
+                intent.putExtra("msgID", MsgID);
+                startActivity(intent);
+
+                break;
+
+            default:
+                break;
+        }
     }
     private void initUI() {
         profile = (FloatingActionButton) findViewById(R.id.fab_profileBtn);
+        messenger = (FloatingActionButton) findViewById(R.id.fab_Msg);
     }
 
 
@@ -363,8 +450,6 @@ public class HomePage extends AppCompatActivity {
                 }
             }, MainLogin.DELAY_TIME);
         }else{
-            //Loops Done now start Building Display
-            Log.i("Amnt of Users Found", " " + userProfiles.size());
             for(int f = 0; f < userProfiles.size(); f++) {
                 userProfilesdata.add(userProfiles.get(f).split("#"));
                 int startindex = findIndex(userProfilesdata.get(f), storeID);

@@ -7,6 +7,20 @@
     tools:context=".HomePage">
 
     <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fab_Msg"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginStart="8dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:src="@android:drawable/ic_dialog_email"
+        app:backgroundTint="@color/colorPrimary"
+        app:elevation="4dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab_profileBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -15,6 +29,7 @@
         android:clickable="true"
         android:focusable="true"
         android:src="@android:drawable/btn_star_big_on"
+        app:backgroundTint="@color/colorPrimary"
         app:elevation="4dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />

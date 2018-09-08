@@ -56,7 +56,7 @@ public class MessageAdapter extends BaseAdapter {
             holder.messageBody = (TextView) convertView.findViewById(R.id.message_body);
             convertView.setTag(holder);
             holder.messageBody.setText(message.getText());
-            Log.i("MSG DRAWN PROPERLY", "" + message.getText());
+//            Log.i("User Sent ", "" + message.getText());
         } else { // this message was sent by someone else so let's create an advanced chat bubble on the left
             convertView = messageInflater.inflate(R.layout.their_message, null);
             holder.name = (TextView) convertView.findViewById(R.id.name);
@@ -65,7 +65,7 @@ public class MessageAdapter extends BaseAdapter {
 
             holder.name.setText(message.getData().getSender());
             holder.messageBody.setText(message.getText());
-            Log.i("MSG DRAWING ISSUE", "" + message.getText());
+//            Log.i("User Received", "" + message.getText());
         }
 
         return convertView;
