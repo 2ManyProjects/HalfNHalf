@@ -1,5 +1,6 @@
 package com.halfnhalf.Messaging;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -14,10 +15,12 @@ import com.backendless.Backendless;
 import com.backendless.async.callback.AsyncCallback;
 import com.backendless.exceptions.BackendlessFault;
 import com.backendless.messaging.MessageStatus;
+import com.backendless.persistence.DataQueryBuilder;
 import com.backendless.rt.messaging.Channel;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.halfnhalf.Defaults;
+import com.halfnhalf.HomePage;
 import com.halfnhalf.R;
 
 import java.io.BufferedWriter;
@@ -25,6 +28,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -44,21 +48,19 @@ public class ChatRoomActivity extends AppCompatActivity {
   ArrayList<Message> msgs;
   String allMsg;
   String MsgID;
+  int index;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_chat_room);
+    HomePage.getNewMsgs(false, ChatRoomActivity.this);
 
     message = findViewById(R.id.message);
-    //messages = findViewById(R.id.messages);
     Bundle bundle = getIntent().getExtras();
-    String getMessages = bundle.getString("convo");
     allMsg = bundle.getString("rawMessage");
-    Gson gson = new Gson();
-    Type type = new TypeToken<ArrayList<Message>>() {
-    }.getType();
-    msgs = gson.fromJson(getMessages, type);
+    index = bundle.getInt("index");
+    msgs = HomePage.Messages.get(index);
 
     name = bundle.getString("name");
     receiver = bundle.getString("othername");
@@ -85,6 +87,15 @@ public class ChatRoomActivity extends AppCompatActivity {
         return handled;
       }
     });
+  }
+
+  @Override
+  public void onBackPressed(){
+      final Intent intent;
+      intent = new Intent(ChatRoomActivity.this, StartChatActivity.class);
+      intent.putExtra("rawMessage", allMsg);
+      startActivity(intent);
+      ChatRoomActivity.this.finish();
   }
 
   //TODO: write a service that checks the received messages every Xseconds
@@ -116,54 +127,83 @@ public class ChatRoomActivity extends AppCompatActivity {
 
   //Image Button
   public void sendMessage(View view) {
-    String m = message.getText().toString();
-    final Message temp = new Message();
-    temp.setText(m);
-    temp.setData(data);
-    temp.setBelongsToCurrentUser(true);
-    messageAdapter.add(temp);
-    messagesView.setSelection(messagesView.getCount() - 1);
+      String m = message.getText().toString();
+      final Message temp = new Message();
+      temp.setText(m);
+      temp.setData(data);
+      temp.setBelongsToCurrentUser(true);
+      messageAdapter.add(temp);
+      messagesView.setSelection(messagesView.getCount() - 1);
+      HomePage.allMsgs += temp.toString();
 
-    final String saveData = temp.toString();
-    String path = getFilesDir() + "/messages/" + "allMsgs";
-    try {
-      BufferedWriter out = new BufferedWriter(new FileWriter(path));
-      out.append(saveData);
-      out.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    Backendless.Data.of("Messages").findById(MsgID,
-            new AsyncCallback<Map>() {
-              @Override
-              public void handleResponse( Map response )
-              {
-                if(allMsg.length() > 6) {
-                  allMsg += saveData;
-                  response.put("allMsgs", allMsg);
-                  Backendless.Persistence.of("Messages").save(response, new AsyncCallback<Map>() {
-                    @Override
-                    public void handleResponse(Map response) {
-                      // Contact objecthas been updated
-                      message.setText("", TextView.BufferType.EDITABLE);
-                      message.setEnabled(true);
-                    }
+      final String saveData = temp.toString();
+      final String otherUser = temp.getData().getReceiver();
+      String path = getFilesDir() + "/messages/" + "allMsgs";
+      try {
+          BufferedWriter out = new BufferedWriter(new FileWriter(path));
+          out.append(saveData);
+          out.close();
+      } catch (IOException e) {
+          e.printStackTrace();
+      }
 
-                    @Override
-                    public void handleFault(BackendlessFault fault) {
-                      // an error has occurred, the error code can be retrieved with fault.getCode()
-                    }
-                  });
-                }
-              }
-              @Override
-              public void handleFault( BackendlessFault fault )
-              {
-                fault.toString();   // an error has occurred, the error code can be retrieved with fault.getCode()
-              }
-            } );
+      String WhereClause = "name = " + "'" + otherUser + "'";
+      DataQueryBuilder dataQuery = DataQueryBuilder.create();
+      dataQuery.setWhereClause(WhereClause);
+      Backendless.Data.of("Messages").find(dataQuery,
+              new AsyncCallback<List<Map>>() {
+                  @Override
+                  public void handleResponse( List<Map> response )
+                  {
+                      final String sendMsgs = response.get(0).get("Received").toString() + saveData;
+                      response.get(0).put("Received", sendMsgs);
+                      Backendless.Persistence.of("Messages").save(response.get(0), new AsyncCallback<Map>() {
+                          @Override
+                          public void handleResponse(Map response) {
+                          }
 
-    message.getText().clear();
+                          @Override
+                          public void handleFault(BackendlessFault fault) {
+                              // an error has occurred, the error code can be retrieved with fault.getCode()
+                          }
+                      });
+                  }
+                  @Override
+                  public void handleFault( BackendlessFault fault )
+                  {
+                      fault.toString();   // an error has occurred, the error code can be retrieved with fault.getCode()
+                  }
+              } );
+
+      Backendless.Data.of("Messages").findById(MsgID,
+              new AsyncCallback<Map>() {
+                  @Override
+                  public void handleResponse( Map response )
+                  {
+                      if(allMsg.length() > 6) {
+                          response.put("Received", saveData);
+                          Backendless.Persistence.of("Messages").save(response, new AsyncCallback<Map>() {
+                              @Override
+                              public void handleResponse(Map response) {
+                                  // Contact objecthas been updated
+                                  message.setText("", TextView.BufferType.EDITABLE);
+                                  message.setEnabled(true);
+                              }
+
+                              @Override
+                              public void handleFault(BackendlessFault fault) {
+                                  // an error has occurred, the error code can be retrieved with fault.getCode()
+                              }
+                          });
+                      }
+                  }
+                  @Override
+                  public void handleFault( BackendlessFault fault ) {
+                      fault.toString();   // an error has occurred, the error code can be retrieved with fault.getCode()
+                  }
+              } );
+
+      message.getText().clear();
   }
 
   //Enter
@@ -175,8 +215,10 @@ public class ChatRoomActivity extends AppCompatActivity {
     temp.setBelongsToCurrentUser(true);
     messageAdapter.add(temp);
     messagesView.setSelection(messagesView.getCount() - 1);
+    HomePage.allMsgs += temp.toString();
 
     final String saveData = temp.toString();
+    final String otherUser = temp.getData().getReceiver();
     String path = getFilesDir() + "/messages/" + "allMsgs";
     try {
       BufferedWriter out = new BufferedWriter(new FileWriter(path));
@@ -185,6 +227,35 @@ public class ChatRoomActivity extends AppCompatActivity {
     } catch (IOException e) {
       e.printStackTrace();
     }
+
+      String WhereClause = "name = " + "'" + otherUser + "'";
+      DataQueryBuilder dataQuery = DataQueryBuilder.create();
+      dataQuery.setWhereClause(WhereClause);
+      Backendless.Data.of("Messages").find(dataQuery,
+              new AsyncCallback<List<Map>>() {
+                  @Override
+                  public void handleResponse( List<Map> response )
+                  {
+                      final String sendMsgs = response.get(0).get("Received").toString() + saveData;
+                      response.get(0).put("Received", sendMsgs);
+                      Backendless.Persistence.of("Messages").save(response.get(0), new AsyncCallback<Map>() {
+                          @Override
+                          public void handleResponse(Map response) {
+                          }
+
+                          @Override
+                          public void handleFault(BackendlessFault fault) {
+                              // an error has occurred, the error code can be retrieved with fault.getCode()
+                          }
+                      });
+                  }
+                  @Override
+                  public void handleFault( BackendlessFault fault )
+                  {
+                      fault.toString();   // an error has occurred, the error code can be retrieved with fault.getCode()
+                  }
+              } );
+
     Backendless.Data.of("Messages").findById(MsgID,
             new AsyncCallback<Map>() {
               @Override

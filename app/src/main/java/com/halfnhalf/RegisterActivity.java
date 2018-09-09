@@ -118,6 +118,7 @@ public class RegisterActivity extends Activity {
                 HashMap msging = new HashMap();
                 msging.put("Received", "");
                 msging.put("allMsgs", "");
+                msging.put("name", name);
                 Backendless.Persistence.of("Messages").save(msging, new AsyncCallback<Map>() {
                     @Override
                     public void handleResponse(Map msg) {

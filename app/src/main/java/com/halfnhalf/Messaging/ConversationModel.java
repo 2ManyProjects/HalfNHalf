@@ -3,7 +3,7 @@ package com.halfnhalf.Messaging;
 import java.util.ArrayList;
 
 public class ConversationModel {
-    String name;
+    String name = "";
     ArrayList<Message> msgs;
 
     public ConversationModel(String name, ArrayList<Message> msgs){
