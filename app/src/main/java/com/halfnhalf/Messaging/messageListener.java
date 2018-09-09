@@ -1,70 +1,126 @@
 package com.halfnhalf.Messaging;
 
+import android.app.Activity;
+import android.app.IntentService;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
+import android.support.annotation.Nullable;
+import android.util.Log;
 import android.widget.Toast;
 import android.os.Process;
 
+import com.backendless.Backendless;
+import com.backendless.async.callback.AsyncCallback;
+import com.backendless.exceptions.BackendlessFault;
+
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import static com.halfnhalf.HomePage.MsgID;
+
 public class messageListener extends Service {
-    private Looper mServiceLooper;
-    private ServiceHandler mServiceHandler;
+    private String data;
+    public static String NOTIFICATION = "com.halfnhalf.Messaging.receiver";
+    public int counter=0;
 
-    // Handler that receives messages from the thread
-    private final class ServiceHandler extends Handler {
-        public ServiceHandler(Looper looper) {
-            super(looper);
-        }
-        @Override
-        public void handleMessage(android.os.Message msg) {
-
-
-            // Stop the service using the startId, so that we don't stop
-            // the service in the middle of handling another job
-//            stopSelf(msg.arg1);
-        }
+    public messageListener(Context applicationContext) {
+        super();
+        Log.i("HERE", "here I am!");
     }
 
-    @Override
-    public void onCreate() {
-        // Start up the thread running the service. Note that we create a
-        // separate thread because the service normally runs in the process's
-        // main thread, which we don't want to block. We also make it
-        // background priority so CPU-intensive work doesn't disrupt our UI.
-        HandlerThread thread = new HandlerThread("ServiceStartArguments",
-                Process.THREAD_PRIORITY_BACKGROUND);
-        thread.start();
-
-        // Get the HandlerThread's Looper and use it for our Handler
-        mServiceLooper = thread.getLooper();
-        mServiceHandler = new ServiceHandler(mServiceLooper);
+    public messageListener() {
     }
-
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show();
-
-        // For each start request, send a message to start a job and deliver the
-        // start ID so we know which request we're stopping when we finish the job
-        android.os.Message msg = mServiceHandler.obtainMessage();
-        msg.arg1 = startId;
-        mServiceHandler.sendMessage(msg);
-
-        // If we get killed, after returning from here, restart
+        super.onStartCommand(intent, flags, startId);
+        startTimer();
         return START_STICKY;
     }
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.i("EXIT", "ondestroy!");
+        Intent broadcastIntent = new Intent("restartService");
+        sendBroadcast(broadcastIntent);
+        stoptimertask();
+    }
 
+    private Timer timer;
+    private TimerTask timerTask;
+    long oldTime=0;
+    public void startTimer() {
+        //set a new Timer
+        timer = new Timer();
+
+        //initialize the TimerTask's job
+        initializeTimerTask();
+
+        //schedule the timer, to wake up every 1 second
+        timer.schedule(timerTask, 1000, 1000); //
+    }
+
+    /**
+     * it sets the timer to print the counter every x seconds
+     */
+    public void initializeTimerTask() {
+        timerTask = new TimerTask() {
+            public void run() {
+                getMsg();
+            }
+        };
+    }
+
+    /**
+     * not needed
+     */
+    public void stoptimertask() {
+        //stop the timer, if it's not already null
+        if (timer != null) {
+            timer.cancel();
+            timer = null;
+        }
+    }
+
+    @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        // We don't provide binding, so return null
         return null;
     }
 
-    @Override
-    public void onDestroy() {
-        Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show();
+    private void getMsg(){
+        data = null;
+        Backendless.Data.of("Messages").findById(MsgID,
+                new AsyncCallback<Map>() {
+                    @Override
+                    public void handleResponse( Map response )
+                    {
+                        data = response.get("Received").toString();
+                        if(data!= null && data.length() > 5)
+                            publishResults();
+                    }
+                    @Override
+                    public void handleFault( BackendlessFault fault )
+                    {
+                        Log.e("Response = null", "" + fault.toString());   // an error has occurred, the error code can be retrieved with fault.getCode()
+                    }
+                } );
     }
+
+
+
+    private void publishResults() {
+        Intent intent = new Intent(NOTIFICATION);
+        intent.putExtra("newData", true);
+        sendBroadcast(intent);
+    }
+
 }

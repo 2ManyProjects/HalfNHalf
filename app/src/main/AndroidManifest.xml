@@ -42,6 +42,15 @@
         <activity
             android:name=".Messaging.ChatRoomActivity"
             android:windowSoftInputMode="adjustResize"/>
+        <receiver
+            android:name="com.halfnhalf.Messaging.restartListener"
+            android:enabled="true"
+            android:exported="true"
+            android:label="RestartServiceWhenStopped">
+            <intent-filter>
+                <action android:name="restartService"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

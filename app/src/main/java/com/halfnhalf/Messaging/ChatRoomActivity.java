@@ -1,7 +1,12 @@
 package com.halfnhalf.Messaging;
 
+import android.app.ActivityManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -10,23 +15,20 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.backendless.Backendless;
 import com.backendless.async.callback.AsyncCallback;
 import com.backendless.exceptions.BackendlessFault;
-import com.backendless.messaging.MessageStatus;
 import com.backendless.persistence.DataQueryBuilder;
 import com.backendless.rt.messaging.Channel;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import com.halfnhalf.Defaults;
 import com.halfnhalf.HomePage;
+import com.halfnhalf.MainLogin;
 import com.halfnhalf.R;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -43,18 +45,29 @@ public class ChatRoomActivity extends AppCompatActivity {
   private Channel channel;
   private String color = ColorPickerUtility.next();
   private MemberData data;
+  private messageListener mMessages;
+  private Intent mServiceIntent;
   String name = "";
-  String receiver = "";
+  String receiving = "";
   ArrayList<Message> msgs;
   String allMsg;
   String MsgID;
   int index;
+  Context ctx;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_chat_room);
+    ctx = this;
+      mMessages = new messageListener(getCtx());
+      mServiceIntent = new Intent(getCtx(), mMessages.getClass());
+      if (!isMyServiceRunning(mMessages.getClass())) {
+          startService(mServiceIntent);
+      }
     HomePage.getNewMsgs(false, ChatRoomActivity.this);
+    registerReceiver(receiver, new IntentFilter(
+              messageListener.NOTIFICATION));
 
     message = findViewById(R.id.message);
     Bundle bundle = getIntent().getExtras();
@@ -63,14 +76,14 @@ public class ChatRoomActivity extends AppCompatActivity {
     msgs = HomePage.Messages.get(index);
 
     name = bundle.getString("name");
-    receiver = bundle.getString("othername");
+    receiving = bundle.getString("othername");
     MsgID = bundle.getString("msgID");
 
     messageAdapter = new MessageAdapter(this);
     messagesView = (ListView) findViewById(R.id.messages_view);
     messagesView.setAdapter(messageAdapter);
 
-    data = new MemberData( name, receiver);
+    data = new MemberData( name, receiving);
 
     populateChat();
     message.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -88,6 +101,83 @@ public class ChatRoomActivity extends AppCompatActivity {
       }
     });
   }
+
+    public Context getCtx() {
+        return ctx;
+    }
+
+  @Override
+    public void onResume(){
+        super.onResume();
+      registerReceiver(receiver, new IntentFilter(
+              messageListener.NOTIFICATION));
+    }
+
+  @Override
+  public void onPause(){
+      super.onPause();
+      unregisterReceiver(receiver);
+  }
+  private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                Log.i ("isMyServiceRunning?", true+"");
+                return true;
+            }
+        }
+        Log.i ("isMyServiceRunning?", false+"");
+        return false;
+    }
+
+
+    @Override
+    protected void onDestroy() {
+        stopService(mServiceIntent);
+        Log.i("MAINACT", "onDestroy!");
+        super.onDestroy();
+
+    }
+
+
+    private BroadcastReceiver receiver = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.e("INCOMMING MSG", "");
+            HomePage.getNewMsgs(false, ChatRoomActivity.this);
+            startTimer();
+//            Bundle bundle = intent.getExtras();
+//            if (bundle != null) {
+//                Boolean getData = bundle.getBoolean("newData");
+//                if (getData == true) {
+//                }
+//            }else {
+//                Toast.makeText(ChatRoomActivity.this, "Received Message Failure, please check your connection",
+//                        Toast.LENGTH_LONG).show();
+//            }
+        }
+    };
+
+
+    private void startTimer(){
+        Log.i("Timer", "Looping ");
+        if(HomePage.processing) {
+            new Handler().postDelayed(new Runnable() {
+
+                @Override
+                public void run() {
+                    startTimer();
+                }
+            }, MainLogin.DELAY_TIME);
+        }else{
+            msgs = HomePage.Messages.get(index);
+            Log.i("Last Msg", "" + msgs.get(msgs.size()-1).toString());
+            remakeChat();
+        }
+
+    }
+
 
   @Override
   public void onBackPressed(){
@@ -108,22 +198,28 @@ public class ChatRoomActivity extends AppCompatActivity {
       temp.setData( msgs.get(i).getData());
       temp.setBelongsToCurrentUser(belongsToCurrentUser);
       messageAdapter.add(temp);
+      messageAdapter.push();
       messagesView.setSelection(messagesView.getCount() - 1);
     }
   }
 
+    private void remakeChat(){
+      messageAdapter.clear();
+        for(int i = 0; i < msgs.size(); i++){
+            boolean belongsToCurrentUser = msgs.get(i).getData().getSender().equals(name);
+            Message temp = new Message();
+            temp.setText( msgs.get(i).getText());
+            temp.setData( msgs.get(i).getData());
+            temp.setBelongsToCurrentUser(belongsToCurrentUser);
+            messageAdapter.add(temp);
+            messagesView.setSelection(messagesView.getCount() - 1);
+        }
+      messageAdapter.push();
+    }
+
   private void handleFault(BackendlessFault fault) {
     Log.e(TAG, fault.toString());
   }
-
-  @Override
-  protected void onDestroy() {
-    super.onDestroy();
-
-    if (channel != null)
-      channel.leave();
-  }
-
 
   //Image Button
   public void sendMessage(View view) {

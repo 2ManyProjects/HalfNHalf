@@ -63,7 +63,7 @@ public class HomePage extends AppCompatActivity {
     private static String profileData;
     private static String objectID;
     private File mPath;
-    private static String MsgID = "";
+    public static String MsgID = "";
     public static String allMsgs;
     public static ArrayList<ArrayList<Message>> Messages;
 
@@ -72,6 +72,7 @@ public class HomePage extends AppCompatActivity {
     private static RecyclerView SummeryrecyclerView;
     public static View.OnClickListener myOnClickListener;
     private boolean firstLaunch = false;
+    public static boolean processing = false;
 
 
     EditText editText;
@@ -213,6 +214,7 @@ public class HomePage extends AppCompatActivity {
     }
 
     public static void getNewMsgs(boolean launch, Context c){
+        processing = true;
         final boolean tolaunch = launch;
         final Context context = c;
         Backendless.Data.of("Messages").findById(MsgID,
@@ -248,7 +250,22 @@ public class HomePage extends AppCompatActivity {
 
                             if(allMsgs != null) {
                                 buildMessages(allMsgs);
+                                processing = false;
                             }
+                            response.put("Received", "");
+                            Backendless.Persistence.of("Messages").save( response, new AsyncCallback<Map>() {
+                                @Override
+                                public void handleResponse( Map response )
+                                {
+                                    if(tolaunch)
+                                        launch(2, context);
+                                }
+                                @Override
+                                public void handleFault( BackendlessFault fault )
+                                {
+                                    // an error has occurred, the error code can be retrieved with fault.getCode()
+                                }
+                            } );
 //                            Log.e("TOTAL MSG", "" +allMsgs);
                         }else{
                             if(allMsgs.length() > 6) {
@@ -268,24 +285,11 @@ public class HomePage extends AppCompatActivity {
 
                             if(allMsgs != null) {
                                 buildMessages(allMsgs);
+                                processing = false;
                             }
 //                            Log.e("TOTAL MSG", "" +allMsgs);
 
                         }
-                        response.put("Received", "");
-                        Backendless.Persistence.of("Messages").save( response, new AsyncCallback<Map>() {
-                            @Override
-                            public void handleResponse( Map response )
-                            {
-                                if(tolaunch)
-                                    launch(2, context);
-                            }
-                            @Override
-                            public void handleFault( BackendlessFault fault )
-                            {
-                                // an error has occurred, the error code can be retrieved with fault.getCode()
-                            }
-                        } );
                     }
                     @Override
                     public void handleFault( BackendlessFault fault )
