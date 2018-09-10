@@ -180,8 +180,6 @@ public class ChatRoomActivity extends AppCompatActivity {
       ChatRoomActivity.this.finish();
   }
 
-  //TODO: write a service that checks the received messages every Xseconds
-
   private void populateChat(){
     for(int i = 0; i < msgs.size(); i++){
       boolean belongsToCurrentUser = msgs.get(i).getData().getSender().equals(name);
