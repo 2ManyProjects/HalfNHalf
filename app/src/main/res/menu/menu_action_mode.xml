@@ -1,0 +1,17 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_delete"
+        android:icon="@android:drawable/ic_input_delete"
+        android:orderInCategory="300"
+        android:title="Delete"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_select_all"
+        android:icon="@android:drawable/ic_input_add"
+        android:orderInCategory="400"
+        android:title="ALL"
+        app:showAsAction="always" />
+
+</menu>
