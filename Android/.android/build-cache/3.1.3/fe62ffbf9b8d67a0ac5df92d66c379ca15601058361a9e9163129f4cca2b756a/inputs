@@ -1,0 +1,10 @@
+COMMAND=PREDEX_LIBRARY_TO_DEX_ARCHIVE
+FILE.path=D:\Android\.gradle\caches\modules-2\files-2.1\com.backendless\backendless\5.0.2\552a437cfaa5d49fff8752c58d9b98f1c4d9f3de\backendless-5.0.2.jar
+FILE.hash=266c863883b285bb506e868cea9b47424d97214c44f284e89fafabb630fdf1a1
+DX_VERSION=1.16
+JUMBO_MODE=true
+OPTIMIZE=true
+DEXER_TOOL=D8
+CACHE_KEY_VERSION=4
+MIN_SDK_VERSION=24
+IS_DEBUGGABLE=true
