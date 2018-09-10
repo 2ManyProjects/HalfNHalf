@@ -56,7 +56,7 @@ public class messageListener extends Service {
 
     private Timer timer;
     private TimerTask timerTask;
-    long oldTime=0;
+
     public void startTimer() {
         //set a new Timer
         timer = new Timer();
@@ -65,7 +65,7 @@ public class messageListener extends Service {
         initializeTimerTask();
 
         //schedule the timer, to wake up every 1 second
-        timer.schedule(timerTask, 1000, 1000); //
+        timer.schedule(timerTask, 1000, 4000); //
     }
 
     /**
@@ -101,11 +101,12 @@ public class messageListener extends Service {
         Backendless.Data.of("Messages").findById(MsgID,
                 new AsyncCallback<Map>() {
                     @Override
-                    public void handleResponse( Map response )
-                    {
-                        data = response.get("Received").toString();
-                        if(data!= null && data.length() > 5)
-                            publishResults();
+                    public void handleResponse( Map response ) {
+                        if(response.get("Received") != null){
+                            data = response.get("Received").toString();
+                            if (data.length() > 5)
+                                publishResults();
+                        }
                     }
                     @Override
                     public void handleFault( BackendlessFault fault )

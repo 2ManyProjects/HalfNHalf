@@ -27,7 +27,8 @@
             android:exported="false"></service>
         <activity
             android:name=".HomePage"
-            android:label="@string/title_activity_home_page" />
+            android:label="@string/title_activity_home_page"
+            android:launchMode="singleInstance" />
         <activity
             android:name=".Profile"
             android:label="Profile Page" />

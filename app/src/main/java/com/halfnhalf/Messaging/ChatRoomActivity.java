@@ -45,8 +45,8 @@ public class ChatRoomActivity extends AppCompatActivity {
   private Channel channel;
   private String color = ColorPickerUtility.next();
   private MemberData data;
-  private messageListener mMessages;
-  private Intent mServiceIntent;
+//  private messageListener mMessages;
+//  private Intent mServiceIntent;
   String name = "";
   String receiving = "";
   ArrayList<Message> msgs;
@@ -60,11 +60,11 @@ public class ChatRoomActivity extends AppCompatActivity {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_chat_room);
     ctx = this;
-      mMessages = new messageListener(getCtx());
-      mServiceIntent = new Intent(getCtx(), mMessages.getClass());
-      if (!isMyServiceRunning(mMessages.getClass())) {
-          startService(mServiceIntent);
-      }
+//      mMessages = new messageListener(getCtx());
+//      mServiceIntent = new Intent(getCtx(), mMessages.getClass());
+//      if (!isMyServiceRunning(mMessages.getClass())) {
+//          startService(mServiceIntent);
+//      }
     HomePage.getNewMsgs(false, ChatRoomActivity.this);
     registerReceiver(receiver, new IntentFilter(
               messageListener.NOTIFICATION));
@@ -77,7 +77,7 @@ public class ChatRoomActivity extends AppCompatActivity {
 
     name = bundle.getString("name");
     receiving = bundle.getString("othername");
-    MsgID = bundle.getString("msgID");
+    MsgID = HomePage.MsgID;
 
     messageAdapter = new MessageAdapter(this);
     messagesView = (ListView) findViewById(R.id.messages_view);
@@ -128,12 +128,12 @@ public class ChatRoomActivity extends AppCompatActivity {
         }
         Log.i ("isMyServiceRunning?", false+"");
         return false;
-    }
+  }
 
 
     @Override
     protected void onDestroy() {
-        stopService(mServiceIntent);
+//        stopService(mServiceIntent);
         Log.i("MAINACT", "onDestroy!");
         super.onDestroy();
 
@@ -147,15 +147,6 @@ public class ChatRoomActivity extends AppCompatActivity {
             Log.e("INCOMMING MSG", "");
             HomePage.getNewMsgs(false, ChatRoomActivity.this);
             startTimer();
-//            Bundle bundle = intent.getExtras();
-//            if (bundle != null) {
-//                Boolean getData = bundle.getBoolean("newData");
-//                if (getData == true) {
-//                }
-//            }else {
-//                Toast.makeText(ChatRoomActivity.this, "Received Message Failure, please check your connection",
-//                        Toast.LENGTH_LONG).show();
-//            }
         }
     };
 
@@ -182,6 +173,7 @@ public class ChatRoomActivity extends AppCompatActivity {
   @Override
   public void onBackPressed(){
       final Intent intent;
+//      stopService(mServiceIntent);
       intent = new Intent(ChatRoomActivity.this, StartChatActivity.class);
       intent.putExtra("rawMessage", allMsg);
       startActivity(intent);
@@ -230,7 +222,7 @@ public class ChatRoomActivity extends AppCompatActivity {
       temp.setBelongsToCurrentUser(true);
       messageAdapter.add(temp);
       messagesView.setSelection(messagesView.getCount() - 1);
-      HomePage.allMsgs += temp.toString();
+      //HomePage.allMsgs += temp.toString();
 
       final String saveData = temp.toString();
       final String otherUser = temp.getData().getReceiver();
@@ -242,6 +234,7 @@ public class ChatRoomActivity extends AppCompatActivity {
       } catch (IOException e) {
           e.printStackTrace();
       }
+      Log.e("EMOJI MMESSAGE ", "" + m.getBytes());
 
       String WhereClause = "name = " + "'" + otherUser + "'";
       DataQueryBuilder dataQuery = DataQueryBuilder.create();
@@ -251,7 +244,11 @@ public class ChatRoomActivity extends AppCompatActivity {
                   @Override
                   public void handleResponse( List<Map> response )
                   {
-                      final String sendMsgs = response.get(0).get("Received").toString() + saveData;
+                      String temp = "";
+                      if(response.get(0).get("Received") != null){
+                          temp = response.get(0).get("Received").toString();
+                      }
+                      final String sendMsgs = temp + saveData;
                       response.get(0).put("Received", sendMsgs);
                       Backendless.Persistence.of("Messages").save(response.get(0), new AsyncCallback<Map>() {
                           @Override
@@ -311,7 +308,8 @@ public class ChatRoomActivity extends AppCompatActivity {
     temp.setBelongsToCurrentUser(true);
     messageAdapter.add(temp);
     messagesView.setSelection(messagesView.getCount() - 1);
-    HomePage.allMsgs += temp.toString();
+      Log.e("EMOJI MMESSAGE ", "" + m);
+    //HomePage.allMsgs += temp.toString();
 
     final String saveData = temp.toString();
     final String otherUser = temp.getData().getReceiver();
@@ -332,7 +330,11 @@ public class ChatRoomActivity extends AppCompatActivity {
                   @Override
                   public void handleResponse( List<Map> response )
                   {
-                      final String sendMsgs = response.get(0).get("Received").toString() + saveData;
+                      String temp = "";
+                      if(response.get(0).get("Received") != null){
+                          temp = response.get(0).get("Received").toString();
+                      }
+                      final String sendMsgs = temp + saveData;
                       response.get(0).put("Received", sendMsgs);
                       Backendless.Persistence.of("Messages").save(response.get(0), new AsyncCallback<Map>() {
                           @Override
@@ -383,15 +385,6 @@ public class ChatRoomActivity extends AppCompatActivity {
             } );
 
     message.getText().clear();
-  }
-
-  private String getRandomColor() {
-    Random r = new Random();
-    StringBuffer sb = new StringBuffer("#");
-    while(sb.length() < 7){
-      sb.append(Integer.toHexString(r.nextInt()));
-    }
-    return sb.toString().substring(0, 7);
   }
 
 }

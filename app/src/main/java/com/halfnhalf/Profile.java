@@ -204,8 +204,10 @@ public class Profile extends AppCompatActivity {
 
                     public void onClick(DialogInterface arg0, int arg1) {
                         Profile.super.onBackPressed();
-                        logoutFromBackendless();
-                        //Profile.super.finish();
+                        //logoutFromBackendless();
+                        Intent intent = new Intent(Profile.this, HomePage.class);
+                        startActivity(intent);
+                        Profile.super.finish();
                     }
                 }).create().show();
     }
@@ -436,7 +438,7 @@ public class Profile extends AppCompatActivity {
         if (item.getItemId() == R.id.save) {
             final String temp = createProfile();
 
-            Backendless.Data.of(BackendlessUser.class).findById(Backendless.UserService.CurrentUser(),
+            Backendless.Data.of(BackendlessUser.class).findById(Backendless.UserService.CurrentUser().getObjectId(),
                     new AsyncCallback<BackendlessUser>() {
                         @Override
                         public void handleResponse(BackendlessUser foundUser) {

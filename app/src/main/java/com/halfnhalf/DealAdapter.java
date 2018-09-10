@@ -43,7 +43,6 @@ public class DealAdapter extends RecyclerView.Adapter<DealAdapter.MyViewHolder> 
 
     public static class MyViewHolder extends RecyclerView.ViewHolder{
         //Member Variables for the holder data
-        private FloatingActionButton mMsg;
         private TextView mWarning;
         private TextView mRate;
         private TextView mAmnt;
@@ -55,17 +54,11 @@ public class DealAdapter extends RecyclerView.Adapter<DealAdapter.MyViewHolder> 
             super(itemView);
 
             //Initialize the views
-            mMsg = (FloatingActionButton)itemView.findViewById(R.id.msg);
             mWarning = (TextView)itemView.findViewById(R.id.warning);
             mRate = (TextView)itemView.findViewById(R.id.rate);
             mAmnt = (TextView)itemView.findViewById(R.id.Amnt);
 
             mContext = context;
-            if(type == 0){
-                mMsg.hide();
-            }else if(type == 1){
-                mMsg.show();
-            }
             //Set the OnClickListener to the whole view
             itemView.setOnClickListener(storeDeals.myOnClickListener);
         }

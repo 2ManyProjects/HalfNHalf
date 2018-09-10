@@ -1,5 +1,6 @@
 package com.halfnhalf;
 
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -29,6 +30,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.halfnhalf.Messaging.Message;
 import com.halfnhalf.Messaging.StartChatActivity;
+import com.halfnhalf.Messaging.messageListener;
 import com.halfnhalf.store.FindStore;
 import com.halfnhalf.store.Store;
 import com.halfnhalf.store.storeDeals;
@@ -64,7 +66,7 @@ public class HomePage extends AppCompatActivity {
     private static String objectID;
     private File mPath;
     public static String MsgID = "";
-    public static String allMsgs;
+    public static String allMsgs = "";
     public static ArrayList<ArrayList<Message>> Messages;
 
     public static RecyclerView.Adapter Summeryadapter;
@@ -73,6 +75,9 @@ public class HomePage extends AppCompatActivity {
     public static View.OnClickListener myOnClickListener;
     private boolean firstLaunch = false;
     public static boolean processing = false;
+    private messageListener mMessages;
+    private Intent mServiceIntent;
+    Context ctx;
 
 
     EditText editText;
@@ -82,6 +87,13 @@ public class HomePage extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home_page);
+
+        ctx = this;
+        mMessages = new messageListener(getCtx());
+        mServiceIntent = new Intent(getCtx(), mMessages.getClass());
+        if (!isMyServiceRunning(mMessages.getClass())) {
+            startService(mServiceIntent);
+        }
         initUI();
         Messages = new ArrayList<ArrayList<Message>>();
         Bundle bundle = getIntent().getExtras();
@@ -99,7 +111,7 @@ public class HomePage extends AppCompatActivity {
         }
 
         if(!lastUser()){
-            Log.e("DIFFERENT USER", "DELETING DATA");;
+            Log.e("DIFFERENT USER", "DELETING DATA");
             deleteRecursive(mPath);
             firstLaunch = true;
             mPath.mkdirs();
@@ -173,6 +185,38 @@ public class HomePage extends AppCompatActivity {
 
     }
 
+    public Context getCtx() {
+        return ctx;
+    }
+
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                Log.i ("isMyServiceRunning?", true+"");
+                return true;
+            }
+        }
+        Log.i ("isMyServiceRunning?", false+"");
+        return false;
+    }
+
+
+    @Override
+    protected void onDestroy() {
+        stopService(mServiceIntent);
+        Log.i("MAINACT", "onDestroy!");
+        super.onDestroy();
+
+    }
+
+    @Override
+    protected void onPause(){
+        super.onPause();
+//        stopService(mServiceIntent);
+    }
+
+
     private boolean lastUser(){
         String inputString = "";
         String path = getFilesDir() + "/messages/" + "LastLogin";
@@ -194,14 +238,16 @@ public class HomePage extends AppCompatActivity {
                     {
                         if(response.get("allMsgs") != null) {
                             allMsgs = response.get("allMsgs").toString();
-                            String path = getFilesDir() + "/messages/" + "LastLogin";
-                            try {
-                                BufferedWriter out = new BufferedWriter(new FileWriter(path));
-                                out.write(Backendless.UserService.CurrentUser().getProperty("name").toString());
-                                out.close();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
+                        }else {
+                            allMsgs = "";
+                        }
+                        String path = getFilesDir() + "/messages/" + "LastLogin";
+                        try {
+                            BufferedWriter out = new BufferedWriter(new FileWriter(path));
+                            out.write(Backendless.UserService.CurrentUser().getProperty("name").toString());
+                            out.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
                         getNewMsgs(false, HomePage.this);
                     }
@@ -273,7 +319,8 @@ public class HomePage extends AppCompatActivity {
                                 Backendless.Persistence.of("Messages").save(response, new AsyncCallback<Map>() {
                                     @Override
                                     public void handleResponse(Map response) {
-                                        // Contact objecthas been updated
+                                        if(tolaunch)
+                                            launch(2, context);
                                     }
 
                                     @Override
@@ -340,7 +387,7 @@ public class HomePage extends AppCompatActivity {
         }
     }
 
-    private static int getIndexofMessage(String sender, String receiver){
+    public static int getIndexofMessage(String sender, String receiver){
         String name = Backendless.UserService.CurrentUser().getProperty("name").toString();
 //        Log.i(Messages.size() + " Name:" + name, "Sender: " + sender + " Receiver: " + receiver);
         if(sender.equals(name)){
@@ -432,7 +479,7 @@ public class HomePage extends AppCompatActivity {
                         if (foundUsers.size() >= 0) {
                             Userlist = foundUsers.get(0).get("UserList").toString();
                             UserIDs = Userlist.split("#");
-                            startTimer(UserIDs, 0, userProfiles);
+                            startTimer(UserIDs, 0);
                         }
                     }
 
@@ -444,7 +491,7 @@ public class HomePage extends AppCompatActivity {
 
     }
 
-    private void startTimer(String [] id, int x, ArrayList<String> profiles){
+    private void startTimer(String [] id, int x){
         final String [] userID = id;
         final int i = x;
         if(x < id.length) {
@@ -460,7 +507,7 @@ public class HomePage extends AppCompatActivity {
                                     public void handleResponse(BackendlessUser foundUser) {
                                         userProfiles.add(foundUser.getProperty("profileData").toString());
                                         y++;
-                                        startTimer(userID, y, userProfiles);
+                                        startTimer(userID, y);
                                     }
 
                                     @Override
@@ -470,7 +517,7 @@ public class HomePage extends AppCompatActivity {
                                 });
                     }else {
                         y++;
-                        startTimer(userID, y, userProfiles);
+                        startTimer(userID, y);
                     }
                 }
             }, MainLogin.DELAY_TIME);
