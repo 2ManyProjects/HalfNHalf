@@ -1,0 +1,10 @@
+COMMAND=PREDEX_LIBRARY_TO_DEX_ARCHIVE
+FILE.path=C:\Users\ShaivKamat\.gradle\caches\transforms-1\files-1.1\play-services-location-15.0.1.aar\39f6f63510538534fa2b1aa265e81609\jars\classes.jar
+FILE.hash=61fa546076fcb812d1d85df7547bf454c04ec97929f909feb3c89b99ddcc8c57
+DX_VERSION=1.16
+JUMBO_MODE=true
+OPTIMIZE=true
+DEXER_TOOL=D8
+CACHE_KEY_VERSION=4
+MIN_SDK_VERSION=24
+IS_DEBUGGABLE=true

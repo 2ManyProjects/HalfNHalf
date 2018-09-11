@@ -1,0 +1,10 @@
+COMMAND=PREDEX_LIBRARY_TO_DEX_ARCHIVE
+FILE.path=C:\Users\ShaivKamat\.gradle\caches\modules-2\files-2.1\com.android.support\support-annotations\28.0.0-rc02\326b0d8c3d8dfe86ed237f0a74395ca8d347e561\support-annotations-28.0.0-rc02.jar
+FILE.hash=8ed277fe6351bdf76fea26ef0df243ad2faa3e160cb3588408402813a076e54e
+DX_VERSION=1.16
+JUMBO_MODE=true
+OPTIMIZE=true
+DEXER_TOOL=D8
+CACHE_KEY_VERSION=4
+MIN_SDK_VERSION=24
+IS_DEBUGGABLE=true

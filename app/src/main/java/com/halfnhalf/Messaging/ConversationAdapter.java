@@ -28,7 +28,6 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
                 inflate(R.layout.list_conversations, parent, false));
     }
 
-
     @Override
     public void onBindViewHolder (final ConversationAdapter.MyViewHolder holder, final int listPosition){
         ConversationModel currentStore = data.get(listPosition);

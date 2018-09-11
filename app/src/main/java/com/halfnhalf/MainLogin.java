@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 //TODO CHANGE IDENTIFIER TO EMAIL IN BACKEND (TABLE SCHEMA) FOR RELEASE
 //TODO CHANGE ENTIRE LOGIN PAGE, FOR PERCENT LAYOUT
+//TODO ADD PERIODS FOR REOCCURING DEALS
 
 public class MainLogin extends Activity {
 
@@ -116,8 +117,7 @@ public class MainLogin extends Activity {
 
     }
 
-    private void startHomePage(BackendlessUser user)
-    {
+    private void startHomePage(BackendlessUser user) {//TODO; Shaiv clean up useless shit
         String msg = "ObjectId: " + user.getObjectId() + "\n"
                 + "UserId: " + user.getUserId() + "\n"
                 + "Email: " + user.getEmail() + "\n"
@@ -147,8 +147,7 @@ public class MainLogin extends Activity {
     }
 
 
-    private void onLoginWithBackendlessButtonClicked()
-    {
+    private void onLoginWithBackendlessButtonClicked() {
         String identity = identityField.getText().toString();
         String password = passwordField.getText().toString();
         boolean rememberLogin = rememberLoginBox.isChecked();
@@ -168,14 +167,12 @@ public class MainLogin extends Activity {
         }, rememberLogin );
     }
 
-    private void onRegisterLinkClicked()
-    {
+    private void onRegisterLinkClicked(){
         Displayer.toaster("Register Button Clicked", "3", getApplicationContext());
         startActivity( new Intent( this, RegisterActivity.class ) );
     }
 
-    private void onRestoreLinkClicked()
-    {
+    private void onRestoreLinkClicked() {
         startActivity( new Intent( this, RestorePasswordActivity.class ) );
     }
 

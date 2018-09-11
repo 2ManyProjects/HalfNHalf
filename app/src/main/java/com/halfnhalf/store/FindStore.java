@@ -77,7 +77,7 @@ public class FindStore extends AppCompatActivity {
         if(bundle != null){
             type = Integer.parseInt(bundle.getString("FindingUsers"));
             storeName = bundle.getString("StoreName");
-            //init();
+            //initUserProfile();
         }else{
             type = 0;
         }

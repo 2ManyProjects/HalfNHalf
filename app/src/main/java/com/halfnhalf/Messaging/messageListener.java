@@ -39,12 +39,14 @@ public class messageListener extends Service {
 
     public messageListener() {
     }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
         startTimer();
         return START_STICKY;
     }
+
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -115,8 +117,6 @@ public class messageListener extends Service {
                     }
                 } );
     }
-
-
 
     private void publishResults() {
         Intent intent = new Intent(NOTIFICATION);

@@ -15,7 +15,6 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.backendless.Backendless;
 import com.backendless.async.callback.AsyncCallback;
@@ -32,39 +31,26 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-
 
 
 public class ChatRoomActivity extends AppCompatActivity {
 
-  public static final String TAG = "RTChat";
   private EditText message;
   private ListView messagesView;
   private MessageAdapter messageAdapter;
-  private Channel channel;
-  private String color = ColorPickerUtility.next();
   private MemberData data;
-//  private messageListener mMessages;
-//  private Intent mServiceIntent;
   String name = "";
   String receiving = "";
   ArrayList<Message> msgs;
   String allMsg;
   String MsgID;
   int index;
-  Context ctx;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_chat_room);
-    ctx = this;
-//      mMessages = new messageListener(getCtx());
-//      mServiceIntent = new Intent(getCtx(), mMessages.getClass());
-//      if (!isMyServiceRunning(mMessages.getClass())) {
-//          startService(mServiceIntent);
-//      }
+
     HomePage.getNewMsgs(false, ChatRoomActivity.this);
     registerReceiver(receiver, new IntentFilter(
               messageListener.NOTIFICATION));
@@ -102,10 +88,6 @@ public class ChatRoomActivity extends AppCompatActivity {
     });
   }
 
-    public Context getCtx() {
-        return ctx;
-    }
-
   @Override
     public void onResume(){
         super.onResume();
@@ -118,67 +100,22 @@ public class ChatRoomActivity extends AppCompatActivity {
       super.onPause();
       unregisterReceiver(receiver);
   }
-  private boolean isMyServiceRunning(Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                Log.i ("isMyServiceRunning?", true+"");
-                return true;
-            }
-        }
-        Log.i ("isMyServiceRunning?", false+"");
-        return false;
-  }
-
 
     @Override
     protected void onDestroy() {
-//        stopService(mServiceIntent);
         Log.i("MAINACT", "onDestroy!");
         super.onDestroy();
 
     }
 
-
-    private BroadcastReceiver receiver = new BroadcastReceiver() {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            Log.e("INCOMMING MSG", "");
-            HomePage.getNewMsgs(false, ChatRoomActivity.this);
-            startTimer();
-        }
-    };
-
-
-    private void startTimer(){
-        Log.i("Timer", "Looping ");
-        if(HomePage.processing) {
-            new Handler().postDelayed(new Runnable() {
-
-                @Override
-                public void run() {
-                    startTimer();
-                }
-            }, MainLogin.DELAY_TIME);
-        }else{
-            msgs = HomePage.Messages.get(index);
-            Log.i("Last Msg", "" + msgs.get(msgs.size()-1).toString());
-            remakeChat();
-        }
-
+    @Override
+    public void onBackPressed(){
+        final Intent intent;
+        intent = new Intent(ChatRoomActivity.this, StartChatActivity.class);
+        intent.putExtra("rawMessage", allMsg);
+        startActivity(intent);
+        ChatRoomActivity.this.finish();
     }
-
-
-  @Override
-  public void onBackPressed(){
-      final Intent intent;
-//      stopService(mServiceIntent);
-      intent = new Intent(ChatRoomActivity.this, StartChatActivity.class);
-      intent.putExtra("rawMessage", allMsg);
-      startActivity(intent);
-      ChatRoomActivity.this.finish();
-  }
 
   private void populateChat(){
     for(int i = 0; i < msgs.size(); i++){
@@ -208,96 +145,42 @@ public class ChatRoomActivity extends AppCompatActivity {
     }
 
   private void handleFault(BackendlessFault fault) {
-    Log.e(TAG, fault.toString());
+    Log.e("chatroom ", fault.toString());
   }
 
-  //Image Button
+    private BroadcastReceiver receiver = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.e("INCOMMING MSG", "");
+            HomePage.getNewMsgs(false, ChatRoomActivity.this);
+            displayNewMsgs();
+        }
+    };
+
+    private void displayNewMsgs(){
+        Log.i("Timer", "Looping ");
+        if(HomePage.processing) {
+            new Handler().postDelayed(new Runnable() {
+
+                @Override
+                public void run() {
+                    displayNewMsgs();
+                }
+            }, MainLogin.DELAY_TIME);
+        }else{
+            msgs = HomePage.Messages.get(index);
+            Log.i("Last Msg", "" + msgs.get(msgs.size()-1).toString());
+            remakeChat();
+        }
+    }
+
+  //Image Button was pressed
   public void sendMessage(View view) {
-      String m = message.getText().toString();
-      final Message temp = new Message();
-      temp.setText(m);
-      temp.setData(data);
-      temp.setBelongsToCurrentUser(true);
-      messageAdapter.add(temp);
-      messagesView.setSelection(messagesView.getCount() - 1);
-      //HomePage.allMsgs += temp.toString();
-
-      final String saveData = temp.toString();
-      final String otherUser = temp.getData().getReceiver();
-      String path = getFilesDir() + "/messages/" + "allMsgs";
-      try {
-          BufferedWriter out = new BufferedWriter(new FileWriter(path));
-          out.append(saveData);
-          out.close();
-      } catch (IOException e) {
-          e.printStackTrace();
-      }
-      Log.e("EMOJI MMESSAGE ", "" + m.getBytes());
-
-      String WhereClause = "name = " + "'" + otherUser + "'";
-      DataQueryBuilder dataQuery = DataQueryBuilder.create();
-      dataQuery.setWhereClause(WhereClause);
-      Backendless.Data.of("Messages").find(dataQuery,
-              new AsyncCallback<List<Map>>() {
-                  @Override
-                  public void handleResponse( List<Map> response )
-                  {
-                      String temp = "";
-                      if(response.get(0).get("Received") != null){
-                          temp = response.get(0).get("Received").toString();
-                      }
-                      final String sendMsgs = temp + saveData;
-                      response.get(0).put("Received", sendMsgs);
-                      Backendless.Persistence.of("Messages").save(response.get(0), new AsyncCallback<Map>() {
-                          @Override
-                          public void handleResponse(Map response) {
-                          }
-
-                          @Override
-                          public void handleFault(BackendlessFault fault) {
-                              // an error has occurred, the error code can be retrieved with fault.getCode()
-                          }
-                      });
-                  }
-                  @Override
-                  public void handleFault( BackendlessFault fault )
-                  {
-                      fault.toString();   // an error has occurred, the error code can be retrieved with fault.getCode()
-                  }
-              } );
-
-      Backendless.Data.of("Messages").findById(MsgID,
-              new AsyncCallback<Map>() {
-                  @Override
-                  public void handleResponse( Map response )
-                  {
-                      if(allMsg.length() > 6) {
-                          response.put("Received", saveData);
-                          Backendless.Persistence.of("Messages").save(response, new AsyncCallback<Map>() {
-                              @Override
-                              public void handleResponse(Map response) {
-                                  // Contact objecthas been updated
-                                  message.setText("", TextView.BufferType.EDITABLE);
-                                  message.setEnabled(true);
-                              }
-
-                              @Override
-                              public void handleFault(BackendlessFault fault) {
-                                  // an error has occurred, the error code can be retrieved with fault.getCode()
-                              }
-                          });
-                      }
-                  }
-                  @Override
-                  public void handleFault( BackendlessFault fault ) {
-                      fault.toString();   // an error has occurred, the error code can be retrieved with fault.getCode()
-                  }
-              } );
-
-      message.getText().clear();
+      sendMessage();
   }
 
-  //Enter
+  //Enter was pressed
   public void sendMessage() {
     String m = message.getText().toString();
     final Message temp = new Message();

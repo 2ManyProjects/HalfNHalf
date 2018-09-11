@@ -6,7 +6,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.TypedArray;
 import android.os.Bundle;
-import android.os.CountDownTimer;
 import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
@@ -22,10 +21,8 @@ import android.view.View;
 
 import com.backendless.Backendless;
 import com.backendless.BackendlessUser;
-import com.backendless.IDataStore;
 import com.backendless.async.callback.AsyncCallback;
 import com.backendless.exceptions.BackendlessFault;
-import com.backendless.persistence.BackendlessDataQuery;
 import com.backendless.persistence.DataQueryBuilder;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -84,7 +81,7 @@ public class Profile extends AppCompatActivity {
         if(bundle != null){
             userInfo[2] = getIntent().getStringExtra("objectID");
             this.userData = bundle.getString("String");
-            init();
+            initUserProfile();
         }else{
             Displayer.toaster("Error getting user Data", "l", this);
             finish();
@@ -136,6 +133,67 @@ public class Profile extends AppCompatActivity {
         helper.attachToRecyclerView(ProfilerecyclerView);
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+        getMenuInflater().inflate(R.menu.menu_profile, menu);
+        return true;
+    }
+
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.save) {
+            final String temp = createProfile();
+
+            Backendless.Data.of(BackendlessUser.class).findById(Backendless.UserService.CurrentUser().getObjectId(),
+                    new AsyncCallback<BackendlessUser>() {
+                        @Override
+                        public void handleResponse(BackendlessUser foundUser) {
+                            foundUser.setProperty("profileData", temp);
+                            Backendless.UserService.update( foundUser, new AsyncCallback<BackendlessUser>()
+                            {
+                                @Override
+                                public void handleResponse( BackendlessUser backendlessUser )
+                                {
+                                    Log.i("UPDATED PROFILE", " " + temp);
+                                }
+
+                                @Override
+                                public void handleFault( BackendlessFault backendlessFault )
+                                {
+
+                                }
+                            }  );
+                        }
+
+                        @Override
+                        public void handleFault(BackendlessFault fault) {
+                            Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+                        }
+                    });
+            return true;
+
+        }else{
+            return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        new AlertDialog.Builder(this)
+                .setTitle("Really Exit?")
+                .setMessage("Are you sure you want to exit?")
+                .setNegativeButton(android.R.string.no, null)
+                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface arg0, int arg1) {
+                        Profile.super.onBackPressed();
+                        //logoutFromBackendless();
+                        Intent intent = new Intent(Profile.this, HomePage.class);
+                        startActivity(intent);
+                        Profile.super.finish();
+                    }
+                }).create().show();
+    }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -171,66 +229,11 @@ public class Profile extends AppCompatActivity {
         }
     }
 
-    private void fillStore(ArrayList<Deal> dealData, String id, ArrayList<String> removed){
-        int index = -1;
-        for(int i = 0; i < Profiledataset.size(); i++){
-            if(Profiledataset.get(i).getID().equals(id)){
-                index = i;
-                break;
-            }
-        }
-//        Displayer.toaster("Deals: " + Integer.toString(dealData.size()) + " ID: " + id, "h", this);
-        if(index == -1){
-            return;
-        }else{
-            for(int i = 0; i < Profiledataset.get(index).getData().size(); i++){
-                if(removed.contains(Profiledataset.get(index).getData(i).getId())) {
-                    Profiledataset.get(index).getData().remove(i);
-                }
-            }
-            for(int i = 0; i < dealData.size(); i++){
-                Profiledataset.get(index).changeDeal(i, dealData.get(i).getRate(), dealData.get(i).getText(), dealData.get(i).getAmnt(), dealData.get(i).getId());
-            }
-        }
-    }
-
-    @Override
-    public void onBackPressed() {
-        new AlertDialog.Builder(this)
-                .setTitle("Really Exit?")
-                .setMessage("Are you sure you want to exit?")
-                .setNegativeButton(android.R.string.no, null)
-                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-
-                    public void onClick(DialogInterface arg0, int arg1) {
-                        Profile.super.onBackPressed();
-                        //logoutFromBackendless();
-                        Intent intent = new Intent(Profile.this, HomePage.class);
-                        startActivity(intent);
-                        Profile.super.finish();
-                    }
-                }).create().show();
-    }
-
-    private void logoutFromBackendless(){
-        Backendless.UserService.logout(new AsyncCallback<Void>() {
-            @Override
-            public void handleResponse(Void response) {
-
-            }
-
-            @Override
-            public void handleFault(BackendlessFault fault) {
-
-            }
-        });
-    }
-
     public String getUserData() {
         return userData;
     }
 
-    public void init(){
+    public void initUserProfile(){
         arrayData = userData.split("#");
         userInfo[0] = arrayData[0];
         userInfo[1] = arrayData[1];
@@ -259,12 +262,39 @@ public class Profile extends AppCompatActivity {
             }
 
         }
-        startTimer(savedStores, 0, true);
-        startTimer(removed, 0, false);
+        queryStoreIDs(savedStores, 0, true);
+        queryStoreIDs(removed, 0, false);
         return temp;
     }
 
-    private void startTimer(ArrayList<String> id, int x, boolean addingStore){
+    private void populateProfile(){
+        ImageResources = getResources().obtainTypedArray(R.array.images);
+        int num = 0;
+        if(numStores == 0)
+            return;
+        for(int i = 4; i < arrayData.length; i++){
+            int counter = 3;//Accomodate STOREID, NAME, ADDRESS
+            Store temp = new Store(arrayData[i], arrayData[i+1], remakeString(arrayData[i+2]), ImageResources.getResourceId((num % 10),0));
+            temp.setNew(false);
+            if(Integer.parseInt(arrayData[i+3]) == 0){
+                Profiledataset.add(temp);
+                num++;
+                i += counter;
+            }else {
+                for (int x = i + 4; x < (i + 4) + Integer.parseInt(arrayData[i + 3]) * 3; x++) {
+                    counter += 3;
+                    temp.addDeal(arrayData[x], remakeString(arrayData[x + 1]), arrayData[x + 2]);
+                    x += 2;
+                }
+                Profiledataset.add(temp);
+                num++;
+                i += counter;
+            }
+        }
+        Profileadapter.notifyDataSetChanged();
+    }
+
+    private void queryStoreIDs(ArrayList<String> id, int x, boolean addingStore){ //TODO; SHAIV CLEAN THIS SHIT UP
         final boolean toAdd = addingStore;
         final ArrayList<String> storeID = id;
         final int i = x;
@@ -354,7 +384,7 @@ public class Profile extends AppCompatActivity {
                                     Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
                                 }
                             });
-                    startTimer(storeID, y, toAdd);
+                    queryStoreIDs(storeID, y, toAdd);
                 }
             }, MainLogin.DELAY_TIME);
         }else if(!addingStore){
@@ -367,6 +397,40 @@ public class Profile extends AppCompatActivity {
     private String fixString(String str){
         return str.replaceAll("#", "~@");
     }
+
+    private String remakeString(String str){
+        return str.replaceAll("~@", "#");
+    }
+
+    private void fillStore(ArrayList<Deal> dealData, String id, ArrayList<String> removed){
+        int index = -1;
+        for(int i = 0; i < Profiledataset.size(); i++){
+            if(Profiledataset.get(i).getID().equals(id)){
+                index = i;
+                break;
+            }
+        }
+//        Displayer.toaster("Deals: " + Integer.toString(dealData.size()) + " ID: " + id, "h", this);
+        if(index == -1){
+            return;
+        }else{
+            for(int i = 0; i < Profiledataset.get(index).getData().size(); i++){
+                if(removed.contains(Profiledataset.get(index).getData(i).getId())) {
+                    Profiledataset.get(index).getData().remove(i);
+                }
+            }
+            for(int i = 0; i < dealData.size(); i++){
+                Profiledataset.get(index).changeDeal(i, dealData.get(i).getRate(), dealData.get(i).getText(), dealData.get(i).getAmnt(), dealData.get(i).getId());
+            }
+        }
+    }
+
+    private void findStore(){
+        Intent intent;
+        intent = new Intent(Profile.this, FindStore.class);
+        startActivityForResult(intent, 2);
+    }
+
     public void addStore(String ID, String Name, String address) {
         if (Profiledataset.size() < 1) {
             Store temp = new Store(ID, Name, address, ImageResources.getResourceId((numStores % 10),0));
@@ -396,87 +460,6 @@ public class Profile extends AppCompatActivity {
         }
     }
 
-    private void populateProfile(){
-        ImageResources = getResources().obtainTypedArray(R.array.images);
-        int num = 0;
-        if(numStores == 0)
-            return;
-        for(int i = 4; i < arrayData.length; i++){
-            int counter = 3;//Accomodate STOREID, NAME, ADDRESS
-            Store temp = new Store(arrayData[i], arrayData[i+1], remakeString(arrayData[i+2]), ImageResources.getResourceId((num % 10),0));
-            temp.setNew(false);
-            if(Integer.parseInt(arrayData[i+3]) == 0){
-                Profiledataset.add(temp);
-                num++;
-                i += counter;
-            }else {
-                for (int x = i + 4; x < (i + 4) + Integer.parseInt(arrayData[i + 3]) * 3; x++) {
-                    counter += 3;
-                    temp.addDeal(arrayData[x], remakeString(arrayData[x + 1]), arrayData[x + 2]);
-                    x += 2;
-                }
-                Profiledataset.add(temp);
-                num++;
-                i += counter;
-            }
-        }
-        Profileadapter.notifyDataSetChanged();
-    }
-
-    private String remakeString(String str){
-        return str.replaceAll("~@", "#");
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        super.onCreateOptionsMenu(menu);
-        getMenuInflater().inflate(R.menu.menu_profile, menu);
-        return true;
-    }
-
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.save) {
-            final String temp = createProfile();
-
-            Backendless.Data.of(BackendlessUser.class).findById(Backendless.UserService.CurrentUser().getObjectId(),
-                    new AsyncCallback<BackendlessUser>() {
-                        @Override
-                        public void handleResponse(BackendlessUser foundUser) {
-                            foundUser.setProperty("profileData", temp);
-                            Backendless.UserService.update( foundUser, new AsyncCallback<BackendlessUser>()
-                            {
-                                @Override
-                                public void handleResponse( BackendlessUser backendlessUser )
-                                {
-                                    Log.i("UPDATED PROFILE", " " + temp);
-                                }
-
-                                @Override
-                                public void handleFault( BackendlessFault backendlessFault )
-                                {
-
-                                }
-                            }  );
-                        }
-
-                        @Override
-                        public void handleFault(BackendlessFault fault) {
-                            Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
-                        }
-                    });
-            return true;
-
-        }else{
-            return super.onOptionsItemSelected(item);
-        }
-    }
-
-    private void findStore(){
-        Intent intent;
-        intent = new Intent(Profile.this, FindStore.class);
-        startActivityForResult(intent, 2);
-    }
-
     private class MyOnClickListener implements View.OnClickListener {
 
         private final Context context;
@@ -501,5 +484,4 @@ public class Profile extends AppCompatActivity {
             startActivityForResult(intent, 1);
         }
     }
-
 }

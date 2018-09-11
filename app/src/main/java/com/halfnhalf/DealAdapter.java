@@ -29,7 +29,6 @@ public class DealAdapter extends RecyclerView.Adapter<DealAdapter.MyViewHolder> 
                 inflate(R.layout.list_deal, parent, false), this.type);
     }
 
-
     @Override
     public void onBindViewHolder (final DealAdapter.MyViewHolder holder, final int listPosition){
         Deal currentDeal = dataSet.get(listPosition);

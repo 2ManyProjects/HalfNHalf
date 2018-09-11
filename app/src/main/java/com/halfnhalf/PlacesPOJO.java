@@ -19,7 +19,6 @@ public class PlacesPOJO {
 
     public class CustomA implements Serializable {
 
-
         @SerializedName("geometry")
         public Geometry geometry;
         @SerializedName("vicinity")
@@ -44,7 +43,6 @@ public class PlacesPOJO {
         public String lat;
         @SerializedName("lng")
         public String lng;
-
 
     }
 
