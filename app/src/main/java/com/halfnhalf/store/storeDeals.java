@@ -277,7 +277,7 @@ public class storeDeals extends AppCompatActivity{
         amnt.setMinValue(1);
         amnt.setMaxValue(20);
         barVal.setText(deal.getRate());
-        amnt.setValue(Integer.parseInt(deal.getAmnt()));
+        amnt.setValue(Integer.parseInt(deal.getTotalAmnt()));
         discount.setProgress(Integer.parseInt(deal.getRate()));
         discount.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override

@@ -33,7 +33,6 @@ public class SummeryAdapter extends RecyclerView.Adapter<SummeryAdapter.MyViewHo
                 inflate(R.layout.list_profile, parent, false));
     }
 
-
     @Override
     public void onBindViewHolder (final SummeryAdapter.MyViewHolder holder, final int listPosition){
         storeSummery currentStore = dataSet.get(listPosition);

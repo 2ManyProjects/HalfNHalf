@@ -26,12 +26,13 @@ import java.util.concurrent.TimeUnit;
 
 //TODO CHANGE IDENTIFIER TO EMAIL IN BACKEND (TABLE SCHEMA) FOR RELEASE
 //TODO CHANGE ENTIRE LOGIN PAGE, FOR PERCENT LAYOUT
+//TODO ADD PERIODS FOR REOCCURING DEALS
 
 public class MainLogin extends Activity {
 
     private boolean isLoggedInBackendless = false;
     private CheckBox rememberLoginBox;
-    public static final int DELAY_TIME = 100;
+    public static final int DELAY_TIME = 50;
 
     // backendless
     private TextView registerLink, restoreLink;
@@ -116,39 +117,28 @@ public class MainLogin extends Activity {
 
     }
 
-    private void startHomePage(BackendlessUser user)
-    {
-        String msg = "ObjectId: " + user.getObjectId() + "\n"
-                + "UserId: " + user.getUserId() + "\n"
-                + "Email: " + user.getEmail() + "\n"
-                + "LastLogin: " + user.getProperty("lastLogin") + "\n"
-                + "Profile Data: " + user.getProperty("profileData");
-        String userStoreData = (String)user.getProperty("profileData");
-        String messageAddress = (String)user.getProperty("messageID");
-
-        for (Map.Entry<String, Object> entry : user.getProperties().entrySet())
-            msg.concat(entry.getKey() + " : " + entry.getValue() + "\n");
+    private void startHomePage(BackendlessUser user) {
+        String userStoreData = (String) user.getProperty("profileData");
+        String messageAddress = (String) user.getProperty("messageID");
 
 
         Intent intent = new Intent(this, HomePage.class);
         intent.putExtra("objectID", user.getObjectId());
-        intent.putExtra(HomePage.userInfo_key, msg);
         intent.putExtra("data", userStoreData);
         intent.putExtra("Msgs", messageAddress);
-        intent.putExtra(HomePage.logoutButtonState_key, true);
         startActivity(intent);
     }
 
-    private void startHomePage(String msg, boolean logoutButtonState){
-        Intent intent = new Intent(this, HomePage.class);
-        intent.putExtra(HomePage.userInfo_key, msg);
-        intent.putExtra(HomePage.logoutButtonState_key, logoutButtonState);
+    private void retry(){
+        passwordField.setText("");
+        identityField.setText("");
+        Intent intent = new Intent(this, MainLogin.class);
+        this.finish();
         startActivity(intent);
     }
 
 
-    private void onLoginWithBackendlessButtonClicked()
-    {
+    private void onLoginWithBackendlessButtonClicked() {
         String identity = identityField.getText().toString();
         String password = passwordField.getText().toString();
         boolean rememberLogin = rememberLoginBox.isChecked();
@@ -164,18 +154,17 @@ public class MainLogin extends Activity {
             public void handleFault(BackendlessFault fault) {
                 Displayer.alertDisplayer("Login Error", " " + fault.toString(), MainLogin.this);
                 Log.e("Login Error", " " + fault.toString());
+                retry();
             }
         }, rememberLogin );
     }
 
-    private void onRegisterLinkClicked()
-    {
+    private void onRegisterLinkClicked(){
         Displayer.toaster("Register Button Clicked", "3", getApplicationContext());
         startActivity( new Intent( this, RegisterActivity.class ) );
     }
 
-    private void onRestoreLinkClicked()
-    {
+    private void onRestoreLinkClicked() {
         startActivity( new Intent( this, RestorePasswordActivity.class ) );
     }
 

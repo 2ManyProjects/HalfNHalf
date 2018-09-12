@@ -1,7 +1,6 @@
 package com.halfnhalf;
 
 import android.content.Context;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -28,7 +27,6 @@ public class DealAdapter extends RecyclerView.Adapter<DealAdapter.MyViewHolder> 
         return new MyViewHolder(mContext, LayoutInflater.from(mContext).
                 inflate(R.layout.list_deal, parent, false), this.type);
     }
-
 
     @Override
     public void onBindViewHolder (final DealAdapter.MyViewHolder holder, final int listPosition){
@@ -67,7 +65,7 @@ public class DealAdapter extends RecyclerView.Adapter<DealAdapter.MyViewHolder> 
             //Populate the textviews with data
             mWarning.setText(currentDeal.getText());
             mRate.setText(currentDeal.getRate() + "%");
-            mAmnt.setText(currentDeal.getAmnt());
+            mAmnt.setText(currentDeal.getTotalAmnt());
 
             //Get the current sport
             mCurrentDeal = currentDeal;

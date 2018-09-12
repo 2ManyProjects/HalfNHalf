@@ -174,6 +174,10 @@ public class RegisterActivity extends Activity {
         });
     }
 
+    boolean isEmailValid(CharSequence email) {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches();
+    }
+
     private boolean isPasswordValid(String newPassword) {
         //TODO: REMOVE THIS FOR RELEASE
         if(newPassword.equals("test"))
@@ -193,9 +197,5 @@ public class RegisterActivity extends Activity {
 
         return matcher.matches();
 
-    }
-
-    boolean isEmailValid(CharSequence email) {
-        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches();
     }
 }

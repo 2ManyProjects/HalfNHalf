@@ -39,16 +39,18 @@ public class messageListener extends Service {
 
     public messageListener() {
     }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
         startTimer();
         return START_STICKY;
     }
+
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.i("EXIT", "ondestroy!");
+        Log.i("EXIT" , "ondestroy!");
         Intent broadcastIntent = new Intent("restartService");
         sendBroadcast(broadcastIntent);
         stoptimertask();
@@ -68,12 +70,11 @@ public class messageListener extends Service {
         timer.schedule(timerTask, 1000, 4000); //
     }
 
-    /**
-     * it sets the timer to print the counter every x seconds
-     */
+
     public void initializeTimerTask() {
         timerTask = new TimerTask() {
             public void run() {
+                Log.i("Still Running", " I think . . . ");
                 getMsg();
             }
         };
@@ -115,8 +116,6 @@ public class messageListener extends Service {
                     }
                 } );
     }
-
-
 
     private void publishResults() {
         Intent intent = new Intent(NOTIFICATION);

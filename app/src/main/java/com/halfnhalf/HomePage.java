@@ -49,9 +49,6 @@ import java.util.List;
 import java.util.Map;
 
 public class HomePage extends AppCompatActivity {
-    static final String userInfo_key = "BackendlessUserInfo";
-    static final String logoutButtonState_key = "LogoutButtonState";
-    static String store_key = "";
 
     private FloatingActionButton profile;
     private FloatingActionButton messenger;
@@ -201,7 +198,6 @@ public class HomePage extends AppCompatActivity {
         return false;
     }
 
-
     @Override
     protected void onDestroy() {
         stopService(mServiceIntent);
@@ -213,9 +209,7 @@ public class HomePage extends AppCompatActivity {
     @Override
     protected void onPause(){
         super.onPause();
-//        stopService(mServiceIntent);
     }
-
 
     private boolean lastUser(){
         String inputString = "";
@@ -349,11 +343,11 @@ public class HomePage extends AppCompatActivity {
     public void deleteRecursive(File Directory) {
 
         if (Directory.isDirectory()) {
-            for (File child : Directory.listFiles()) {
+            for(int i = 0; i < Directory.listFiles().length; i++){
+                File child = Directory.listFiles()[i];
                 deleteRecursive(child);
             }
         }
-
         Directory.delete();
     }
 
@@ -425,11 +419,11 @@ public class HomePage extends AppCompatActivity {
                 break;
         }
     }
+
     private void initUI() {
         profile = (FloatingActionButton) findViewById(R.id.fab_profileBtn);
         messenger = (FloatingActionButton) findViewById(R.id.fab_Msg);
     }
-
 
     private void logoutFromBackendless(){
         Backendless.UserService.logout(new AsyncCallback<Void>() {
@@ -488,7 +482,6 @@ public class HomePage extends AppCompatActivity {
                         Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
                     }
                 });
-
     }
 
     private void startTimer(String [] id, int x){
@@ -573,6 +566,7 @@ public class HomePage extends AppCompatActivity {
     private String remakeString(String str){
         return str.replaceAll("~@", "#");
     }
+
     private int findIndex(String [] str, String token){
         for(int i = 0; i < str.length; i++){
             if(str[i].equals(token)){
@@ -612,6 +606,7 @@ public class HomePage extends AppCompatActivity {
             launch(v);
             return;
         }
+
         private void launch(View v){
             int selectedItemPosition = SummeryrecyclerView.getChildPosition(v);
             storeSummery mCurrentStore = stores.get(selectedItemPosition);

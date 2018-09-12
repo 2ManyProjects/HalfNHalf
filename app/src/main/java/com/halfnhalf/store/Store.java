@@ -73,4 +73,18 @@ public class Store {
         return storeDeals.size();
     }
 
+    private String fixString(String str){
+        return str.replaceAll("#", "~@");
+    }
+
+    @Override
+    public String toString(){
+        String temp = ID + "#" + name + "#" + fixString(address) + "#" + Integer.toString(storeDeals.size()) + "#";
+        for(int i = 0; i < storeDeals.size(); i++){
+            temp += storeDeals.get(i).toString();
+        }
+        return temp;
+    }
+
+
 }

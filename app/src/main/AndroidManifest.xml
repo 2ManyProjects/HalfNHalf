@@ -23,8 +23,6 @@
         </activity>
         <activity android:name=".RestorePasswordActivity" />
         <activity android:name=".RegisterActivity" />
-        <service android:name=".Messaging.messageListener"
-            android:exported="false"></service>
         <activity
             android:name=".HomePage"
             android:label="@string/title_activity_home_page"
@@ -43,6 +41,8 @@
         <activity
             android:name=".Messaging.ChatRoomActivity"
             android:windowSoftInputMode="adjustResize"/>
+        <service android:name=".Messaging.messageListener"
+            android:exported="false"></service>
         <receiver
             android:name="com.halfnhalf.Messaging.restartListener"
             android:enabled="true"
