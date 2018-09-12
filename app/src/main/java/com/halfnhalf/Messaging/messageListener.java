@@ -30,7 +30,6 @@ import static com.halfnhalf.HomePage.MsgID;
 public class messageListener extends Service {
     private String data;
     public static String NOTIFICATION = "com.halfnhalf.Messaging.receiver";
-    public int counter=0;
 
     public messageListener(Context applicationContext) {
         super();
@@ -74,15 +73,11 @@ public class messageListener extends Service {
     public void initializeTimerTask() {
         timerTask = new TimerTask() {
             public void run() {
-                Log.i("Still Running", " I think . . . ");
                 getMsg();
             }
         };
     }
 
-    /**
-     * not needed
-     */
     public void stoptimertask() {
         //stop the timer, if it's not already null
         if (timer != null) {

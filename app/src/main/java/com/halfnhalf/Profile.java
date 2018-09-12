@@ -254,14 +254,6 @@ public class Profile extends AppCompatActivity {
         String temp = userInfo[0] + "#" + userInfo[1] + "#" + Integer.toString(versionNum++) + "#" + Integer.toString(numStores) + "#";
         for(int i = 0; i < Profiledataset.size(); i++){
             temp += Profiledataset.get(i).toString();
-//            temp += Profiledataset.get(i).getID() + "#" + Profiledataset.get(i).getName() + "#" + fixString(Profiledataset.get(i).getAddress()) + "#" + Integer.toString(Profiledataset.get(i).getData().size()) + "#";
-//            for(int x = 0; x < Profiledataset.get(i).getDealNum(); x++){
-//                String rate = Profiledataset.get(i).storeDeals.get(x).getRate() + "#";
-//                String text = fixString(Profiledataset.get(i).storeDeals.get(x).getText()) + "#";
-//                String amnt = Profiledataset.get(i).storeDeals.get(x).getTotalAmnt() + "#";
-//                temp += rate + text + amnt;
-//            }
-
         }
         queryStoreIDs(savedStores, 0, true, true);
         queryStoreIDs(removed, 0, false, true);
