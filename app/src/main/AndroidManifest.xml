@@ -36,22 +36,26 @@
             android:windowSoftInputMode="stateHidden" />
         <activity
             android:name=".Messaging.StartChatActivity"
-            android:windowSoftInputMode="stateHidden"
-            android:launchMode="singleInstance"/>
+            android:launchMode="singleInstance"
+            android:windowSoftInputMode="stateHidden" />
         <activity
             android:name=".Messaging.ChatRoomActivity"
-            android:windowSoftInputMode="adjustResize"/>
-        <service android:name=".Messaging.messageListener"
-            android:exported="false"></service>
+            android:windowSoftInputMode="adjustResize" />
+
+        <service
+            android:name=".Messaging.messageListener"
+            android:exported="false" />
+
         <receiver
-            android:name="com.halfnhalf.Messaging.restartListener"
+            android:name=".Messaging.restartListener"
             android:enabled="true"
             android:exported="true"
             android:label="RestartServiceWhenStopped">
             <intent-filter>
-                <action android:name="restartService"/>
+                <action android:name="restartService" />
             </intent-filter>
         </receiver>
+
     </application>
 
 </manifest>

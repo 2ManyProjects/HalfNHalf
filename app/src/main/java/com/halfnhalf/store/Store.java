@@ -54,18 +54,18 @@ public class Store {
         return imageResource;
     }
 
-    public void addDeal(String rate, String txt, String amount) {
-        Deal temp = new Deal(rate, txt, amount);
+    public void addDeal(String rate, String txt, String amount, String currentAmnt, boolean atCost, boolean reoccuring, String period, String date) {
+        String [] t = date.split("~");
+        Deal temp = new Deal(rate, txt, amount, currentAmnt, atCost, reoccuring, period, t[0], t[1], t[2]);
         storeDeals.add(temp);
     }
 
-    public void changeDeal(int index, String rate, String txt, String amount, String id ) {
+    public void changeDeal(int index, String rate, String txt, String totalAmount, String currentAmnt, boolean atCost, boolean reoccur, String period, String year, String month, String day, String id ) {
+        Deal temp = new Deal(rate, txt, totalAmount, currentAmnt, atCost, reoccur, period, year, month, day, id);
         if(index >= storeDeals.size()){
-            Deal temp = new Deal(rate, txt, amount, id);
             storeDeals.add(temp);
             return;
         }
-        Deal temp = new Deal(rate, txt, amount, id);
         storeDeals.set(index, temp);
     }
 

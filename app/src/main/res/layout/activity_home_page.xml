@@ -21,6 +21,34 @@
         app:layout_constraintStart_toStartOf="parent" />
 
     <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fab_buy"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginStart="48dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:src="@android:drawable/ic_dialog_email"
+        app:backgroundTint="#0084ff"
+        app:elevation="4dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fab_sell"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginStart="88dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:src="@android:drawable/ic_dialog_email"
+        app:backgroundTint="@android:color/holo_green_dark"
+        app:elevation="4dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab_profileBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

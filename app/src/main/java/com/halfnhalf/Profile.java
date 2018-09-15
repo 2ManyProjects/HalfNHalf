@@ -33,6 +33,7 @@ import com.halfnhalf.store.storeDeals;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -274,10 +275,17 @@ public class Profile extends AppCompatActivity {
                 num++;
                 i += counter;
             }else {
-                for (int x = i + 4; x < (i + 4) + Integer.parseInt(arrayData[i + 3]) * 3; x++) {
-                    counter += 3;
-                    temp.addDeal(arrayData[x], remakeString(arrayData[x + 1]), arrayData[x + 2]);
-                    x += 2;
+                for (int x = i + 4; x < (i + 4) + Integer.parseInt(arrayData[i + 3]) * 8; x++) {
+                    counter += 8;
+                    temp.addDeal(arrayData[x],
+                            remakeString(arrayData[x + 1]),
+                            arrayData[x + 2],
+                            arrayData[x + 3],
+                            Boolean.parseBoolean(arrayData[x + 4]),
+                            Boolean.parseBoolean(arrayData[x + 5]),
+                            arrayData[x + 6],
+                            arrayData[x + 7]);
+                    x += 7;
                 }
                 Profiledataset.add(temp);
                 num++;
@@ -417,7 +425,18 @@ public class Profile extends AppCompatActivity {
                 }
             }
             for(int i = 0; i < dealData.size(); i++){
-                Profiledataset.get(index).changeDeal(i, dealData.get(i).getRate(), dealData.get(i).getText(), dealData.get(i).getTotalAmnt(), dealData.get(i).getId());
+                Profiledataset.get(index).changeDeal(i,
+                        dealData.get(i).getRate(),
+                        dealData.get(i).getText(),
+                        dealData.get(i).getTotalAmnt(),
+                        dealData.get(i).getCurrentAmnt(),
+                        dealData.get(i).getAtCost(),
+                        dealData.get(i).getReoccuring(),
+                        dealData.get(i).getPeriodVal(),
+                        Integer.toString(dealData.get(i).getResetDate().get(Calendar.YEAR)),
+                        Integer.toString(dealData.get(i).getResetDate().get(Calendar.MONTH)),
+                        Integer.toString(dealData.get(i).getResetDate().get(Calendar.DAY_OF_MONTH)),
+                        dealData.get(i).getId());
             }
         }
     }

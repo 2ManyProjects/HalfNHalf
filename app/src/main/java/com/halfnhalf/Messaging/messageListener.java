@@ -1,6 +1,7 @@
 package com.halfnhalf.Messaging;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.IntentService;
 import android.app.Service;
 import android.content.Context;
@@ -53,20 +54,31 @@ public class messageListener extends Service {
         Intent broadcastIntent = new Intent("restartService");
         sendBroadcast(broadcastIntent);
         stoptimertask();
+        //startService(new Intent(this, messageListener.class));
+        //TODO get it to restart
     }
 
     private Timer timer;
     private TimerTask timerTask;
 
     public void startTimer() {
-        //set a new Timer
         timer = new Timer();
 
-        //initialize the TimerTask's job
         initializeTimerTask();
 
-        //schedule the timer, to wake up every 1 second
         timer.schedule(timerTask, 1000, 4000); //
+    }
+
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                Log.i ("isMyServiceRunning?", true+"");
+                return true;
+            }
+        }
+        Log.i ("isMyServiceRunning?", false+"");
+        return false;
     }
 
 
@@ -79,7 +91,6 @@ public class messageListener extends Service {
     }
 
     public void stoptimertask() {
-        //stop the timer, if it's not already null
         if (timer != null) {
             timer.cancel();
             timer = null;
@@ -98,8 +109,8 @@ public class messageListener extends Service {
                 new AsyncCallback<Map>() {
                     @Override
                     public void handleResponse( Map response ) {
-                        if(response.get("Received") != null){
-                            data = response.get("Received").toString();
+                        if(response.get("buyingReceived")!= null || response.get("sellingReceived") != null){
+                            data = response.get("buyingReceived").toString() + response.get("sellingReceived").toString();
                             if (data.length() > 5)
                                 publishResults();
                         }

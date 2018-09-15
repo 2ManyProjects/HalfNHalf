@@ -31,7 +31,7 @@ public class StartChatActivity extends AppCompatActivity{
   ArrayList<ArrayList<Message>> allMessages;
   public static RecyclerView.Adapter mAdapter;
   public static View.OnClickListener myOnClickListener;
-  private String allMsg = "";
+  private int type = 0;
   private static boolean backpressed = false;
 
   @Override
@@ -39,13 +39,19 @@ public class StartChatActivity extends AppCompatActivity{
     super.onCreate(savedInstanceState);
     backpressed = false;
     setContentView(R.layout.activity_start_char);
-    HomePage.getNewMsgs(false, StartChatActivity.this);
+    HomePage.getNewMsgs(false, StartChatActivity.this, 0);
     registerReceiver(receiver, new IntentFilter(
             messageListener.NOTIFICATION));
 
     Bundle bundle = getIntent().getExtras();
-    allMsg = bundle.getString("rawMessage");
-    allMessages = HomePage.Messages;
+    type = bundle.getInt("type");
+    if(type == 0) {
+        allMessages = HomePage.Messages;
+    }else if(type == 1) {
+        allMessages = HomePage.buyingMessages;
+    }else if(type == 2) {
+        allMessages = HomePage.sellingMessages;
+    }
 
     populateDataAndSetAdapter();
     initUI();
@@ -77,9 +83,21 @@ public class StartChatActivity extends AppCompatActivity{
   public void onResume(){
     super.onResume();
     backpressed = false;
+      Bundle bundle = getIntent().getExtras();
+      type = bundle.getInt("type");
+      if(type == 0) {
+          allMessages = HomePage.Messages;
+      }else if(type == 1) {
+          allMessages = HomePage.buyingMessages;
+      }else if(type == 2) {
+          allMessages = HomePage.sellingMessages;
+      }
+
+      populateDataAndSetAdapter();
+      initUI();
+      mAdapter.notifyDataSetChanged();
     registerReceiver(receiver, new IntentFilter(
             messageListener.NOTIFICATION));
-    Log.e("test", "on resume");
   }
 
   private BroadcastReceiver receiver = new BroadcastReceiver() {
@@ -87,7 +105,7 @@ public class StartChatActivity extends AppCompatActivity{
     @Override
     public void onReceive(Context context, Intent intent) {
       Log.e("INCOMMING MSG", "");
-      HomePage.getNewMsgs(false, StartChatActivity.this);
+      HomePage.getNewMsgs(false, StartChatActivity.this, 0);
       startTimer();
     }
   };
@@ -103,7 +121,13 @@ public class StartChatActivity extends AppCompatActivity{
         }
       }, MainLogin.DELAY_TIME);
     }else{
-      allMessages = HomePage.Messages;
+        if(type == 0) {
+            allMessages = HomePage.Messages;
+        }else if(type == 1) {
+            allMessages = HomePage.buyingMessages;
+        }else if(type == 2) {
+            allMessages = HomePage.sellingMessages;
+        }
       populateDataAndSetAdapter();
       initUI();
       mAdapter.notifyDataSetChanged();
@@ -162,7 +186,7 @@ public class StartChatActivity extends AppCompatActivity{
       String name = Backendless.UserService.CurrentUser().getProperty("name").toString();
       intent.putExtra("name", name);
       intent.putExtra("othername", dataModel.get(selectedItemPosition).getName());
-      intent.putExtra("rawMessage", allMsg);
+      intent.putExtra("type", type);
       intent.putExtra("msgID", getIntent().getStringExtra("msgID"));
       startActivity(intent);
     //  StartChatActivity.this.finish();

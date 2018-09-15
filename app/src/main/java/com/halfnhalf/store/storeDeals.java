@@ -18,9 +18,15 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.NumberPicker;
 import android.widget.SeekBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.google.gson.Gson;
@@ -33,6 +39,7 @@ import com.halfnhalf.R;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 
 public class storeDeals extends AppCompatActivity{
@@ -195,9 +202,18 @@ public class storeDeals extends AppCompatActivity{
     }
     private Dialog addDeal(){
         final EditText text;
-        final TextView barVal;
+        final TextView barVal, addOn, calendarAddOn;
         final SeekBar discount;
-        final NumberPicker amnt;
+        final NumberPicker totalAmnt, currentAmnt;
+        final Spinner dealType, period;
+        final CheckBox limit, reoccuring;
+        final DatePicker date;
+        final String [] dealTypes = {"Discount", "At Cost"};
+        final String [] periods = {"Weekly", "BiWeekly", "Monthly", "BiMonthly", "Quarterly", "Half Year", "Yearly", "BiYearly", "TriYearly"};
+        final ArrayAdapter<String> dealTypeadapter = new ArrayAdapter<String>(storeDeals.this,
+                android.R.layout.simple_spinner_item, dealTypes);
+        final ArrayAdapter<String> periodsadapter = new ArrayAdapter<String>(storeDeals.this,
+                android.R.layout.simple_spinner_item, periods);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(storeDeals.this);
         LayoutInflater inflater = storeDeals.this.getLayoutInflater();
@@ -206,12 +222,109 @@ public class storeDeals extends AppCompatActivity{
 
         text = view.findViewById(R.id.text);
         discount = view.findViewById(R.id.seekBar);
-        amnt = view.findViewById(R.id.numberPicker);
+        totalAmnt = view.findViewById(R.id.totalAmnt);
+        currentAmnt = view.findViewById(R.id.currentAmnt);
         barVal = view.findViewById(R.id.barVal);
+        addOn = view.findViewById(R.id.addOn);
+        calendarAddOn = view.findViewById(R.id.CalendarTitle);;
+        dealType = view.findViewById(R.id.dealType);
+        period = view.findViewById(R.id.period);
+        limit = view.findViewById(R.id.Nolimit);
+        reoccuring = view.findViewById(R.id.isReoccuring);
+        date = view.findViewById(R.id.datePicker);
 
-        amnt.setMinValue(1);
-        amnt.setMaxValue(20);
+        dealTypeadapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        dealType.setAdapter(dealTypeadapter);
+
+        periodsadapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        period.setAdapter(periodsadapter);
+        period.setVisibility(View.GONE);
+        addOn.setVisibility(View.GONE);
+        date.setVisibility(View.GONE);
+        calendarAddOn.setVisibility(View.GONE);
+        totalAmnt.setVisibility(View.GONE);
+        currentAmnt.setVisibility(View.GONE);
+        reoccuring.setVisibility(View.GONE);
+        totalAmnt.setMinValue(1);
+        totalAmnt.setMaxValue(40);
+        currentAmnt.setMinValue(1);
+        currentAmnt.setMaxValue(1);
         barVal.setText("50%");
+
+        Calendar calendar = Calendar.getInstance();
+        date.init(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH), new DatePicker.OnDateChangedListener() {
+            @Override
+            public void onDateChanged(DatePicker view, int year, int monthOfYear, int dayOfMonth){
+
+            }
+        });
+
+        dealType.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if(position == 1){
+                    addOn.setVisibility(View.VISIBLE);
+                    discount.setProgress(5);
+                }else{
+                    addOn.setVisibility(View.GONE);
+                    discount.setProgress(50);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+
+        totalAmnt.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
+            @Override
+            public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
+                currentAmnt.setMaxValue(newVal);
+                currentAmnt.setValue(newVal);
+            }
+        });
+
+        currentAmnt.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
+            @Override
+            public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
+                if(newVal > totalAmnt.getValue()){
+                    currentAmnt.setValue(totalAmnt.getValue());
+                }
+            }
+        });
+
+        limit.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener(){
+
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked){
+                    totalAmnt.setVisibility(View.VISIBLE);
+                    currentAmnt.setVisibility(View.VISIBLE);
+                    reoccuring.setVisibility(View.VISIBLE);
+                }else{
+                    totalAmnt.setVisibility(View.GONE);
+                    currentAmnt.setVisibility(View.GONE);
+                    reoccuring.setVisibility(View.GONE);
+                }
+            }
+        });
+
+        reoccuring.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener(){
+
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked){
+                    period.setVisibility(View.VISIBLE);
+                    date.setVisibility(View.VISIBLE);
+                    calendarAddOn.setVisibility(View.VISIBLE);
+                }else{
+                    period.setVisibility(View.GONE);
+                    date.setVisibility(View.GONE);
+                    calendarAddOn.setVisibility(View.GONE);
+                }
+            }
+        });
 
         discount.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -232,18 +345,55 @@ public class storeDeals extends AppCompatActivity{
         builder.setPositiveButton("Submit", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int id) {
+                String totalAmount = "0";
+                String currentAmount = "0";
+                String periodstr = "0";
+                String year = "0";
+                String month = "0";
+                String day = "0";
+                boolean isAtCost = false;
+                boolean reoccur;
                 if(text.getText().length() == 0){
                     text.setText("No Limitations");
                 }
-                Deal temp = new Deal(
-                        Integer.toString(discount.getProgress()),
-                        text.getText().toString(),
-                        Integer.toString(amnt.getValue()));
+                if(limit.isChecked()){
+                    totalAmount = Integer.toString(totalAmnt.getValue());
+                    currentAmount = Integer.toString(currentAmnt.getValue());
+                    reoccur = reoccuring.isChecked();
+                }else{
+                    reoccur = false;
+                    totalAmount = "50";
+                    currentAmount = "50";
+                }
+                if(dealType.getSelectedItemPosition() == 1)
+                    isAtCost = true;
+                if(reoccuring.isChecked()){
+                    periodstr = Integer.toString(period.getSelectedItemPosition());
+                    year = Integer.toString(date.getYear());
+                    month = Integer.toString(date.getMonth());
+                    day = Integer.toString(date.getDayOfMonth());
+                }else{
+                    periodstr = "11";
+                }
+                    Log.e("CALENDAR", "YEAR " + year + " MONTH " + month + " DAY " + day);
+
+                    Deal temp = new Deal(
+                            Integer.toString(discount.getProgress()),
+                            text.getText().toString(),
+                            totalAmount,
+                            currentAmount,
+                            isAtCost,
+                            reoccur,
+                            periodstr,
+                            year,
+                            month,
+                            day);
                 Dealdataset.add(temp);
 
                 int addItemAtListPosition = Dealdataset.size();
                 Dealadapter.notifyItemInserted(addItemAtListPosition);
                 isChanged = true;
+                Log.e("SPINNER VAL: ", "" + dealType.getSelectedItemPosition());
             }
         })
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -255,13 +405,22 @@ public class storeDeals extends AppCompatActivity{
     }
 
     private Dialog editDeal(Deal deal, int index){
-        final EditText text;
-        final TextView barVal;
-        final SeekBar discount;
-        final NumberPicker amnt;
         final String warn = deal.getText();
         final String dealID = deal.getId();
         final int i = index;
+        final EditText text;
+        final TextView barVal, addOn, calendarAddOn;
+        final SeekBar discount;
+        final NumberPicker totalAmnt, currentAmnt;
+        final Spinner dealType, period;
+        final CheckBox limit, reoccuring;
+        final DatePicker date;
+        final String [] dealTypes = {"Discount", "At Cost"};
+        final String [] periods = {"Weekly", "BiWeekly", "Monthly", "BiMonthly", "Quarterly", "Half Year", "Yearly", "BiYearly", "TriYearly"};
+        final ArrayAdapter<String> dealTypeadapter = new ArrayAdapter<String>(storeDeals.this,
+                android.R.layout.simple_spinner_item, dealTypes);
+        final ArrayAdapter<String> periodsadapter = new ArrayAdapter<String>(storeDeals.this,
+                android.R.layout.simple_spinner_item, periods);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(storeDeals.this);
         LayoutInflater inflater = storeDeals.this.getLayoutInflater();
@@ -270,15 +429,139 @@ public class storeDeals extends AppCompatActivity{
 
         text = view.findViewById(R.id.text);
         discount = view.findViewById(R.id.seekBar);
-        amnt = view.findViewById(R.id.numberPicker);
+        totalAmnt = view.findViewById(R.id.totalAmnt);
+        currentAmnt = view.findViewById(R.id.currentAmnt);
         barVal = view.findViewById(R.id.barVal);
+        addOn = view.findViewById(R.id.addOn);
+        calendarAddOn = view.findViewById(R.id.CalendarTitle);
+        dealType = view.findViewById(R.id.dealType);
+        period = view.findViewById(R.id.period);
+        limit = view.findViewById(R.id.Nolimit);
+        reoccuring = view.findViewById(R.id.isReoccuring);
+        date = view.findViewById(R.id.datePicker);
 
-        text.setHint(deal.getText());
-        amnt.setMinValue(1);
-        amnt.setMaxValue(20);
-        barVal.setText(deal.getRate());
-        amnt.setValue(Integer.parseInt(deal.getTotalAmnt()));
-        discount.setProgress(Integer.parseInt(deal.getRate()));
+        dealTypeadapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        dealType.setAdapter(dealTypeadapter);
+
+        periodsadapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        period.setAdapter(periodsadapter);
+        period.setVisibility(View.GONE);
+        addOn.setVisibility(View.GONE);
+        date.setVisibility(View.GONE);
+        totalAmnt.setVisibility(View.GONE);
+        currentAmnt.setVisibility(View.GONE);
+        reoccuring.setVisibility(View.GONE);
+        calendarAddOn.setVisibility(View.GONE);
+        totalAmnt.setMinValue(1);
+        totalAmnt.setMaxValue(40);
+        currentAmnt.setMinValue(1);
+        currentAmnt.setMaxValue(1);
+        barVal.setText(deal.getRate() + "%");
+
+        if(deal.getAtCost()){
+            dealType.setSelection(1);
+        }else{
+            dealType.setSelection(0);
+        }
+
+        Calendar calendar = Calendar.getInstance();
+        date.init(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH), new DatePicker.OnDateChangedListener() {
+            @Override
+            public void onDateChanged(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
+
+            }
+        });
+
+        limit.setChecked(deal.getLimit());
+        if(limit.isChecked()){
+            totalAmnt.setVisibility(View.VISIBLE);
+            currentAmnt.setVisibility(View.VISIBLE);
+            reoccuring.setVisibility(View.VISIBLE);
+            totalAmnt.setValue(Integer.parseInt(deal.getTotalAmnt()));
+            currentAmnt.setValue(Integer.parseInt(deal.getCurrentAmnt()));
+            reoccuring.setChecked(deal.getReoccuring());
+            if(reoccuring.isChecked()){
+                period.setVisibility(View.VISIBLE);
+                date.setVisibility(View.VISIBLE);
+                calendarAddOn.setVisibility(View.VISIBLE);
+                period.setSelection(Integer.parseInt(deal.getPeriodVal()));
+                Calendar temp = deal.getResetDate();
+                date.init(temp.get(Calendar.YEAR), temp.get(Calendar.MONTH), temp.get(Calendar.DAY_OF_MONTH), new DatePicker.OnDateChangedListener() {
+                    @Override
+                    public void onDateChanged(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
+
+                    }
+                });
+            }
+        }
+
+        dealType.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if(position == 1){
+                    addOn.setVisibility(View.VISIBLE);
+                    discount.setProgress(5);
+                }else{
+                    addOn.setVisibility(View.GONE);
+                    discount.setProgress(50);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+
+        totalAmnt.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
+            @Override
+            public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
+                currentAmnt.setMaxValue(newVal);
+                currentAmnt.setValue(newVal);
+            }
+        });
+
+        currentAmnt.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
+            @Override
+            public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
+                if(newVal > totalAmnt.getValue()){
+                    currentAmnt.setValue(totalAmnt.getValue());
+                }
+            }
+        });
+
+        limit.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener(){
+
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked){
+                    totalAmnt.setVisibility(View.VISIBLE);
+                    currentAmnt.setVisibility(View.VISIBLE);
+                    reoccuring.setVisibility(View.VISIBLE);
+                }else{
+                    totalAmnt.setVisibility(View.GONE);
+                    currentAmnt.setVisibility(View.GONE);
+                    reoccuring.setVisibility(View.GONE);
+                }
+            }
+        });
+
+        reoccuring.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener(){
+
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked){
+                    period.setVisibility(View.VISIBLE);
+                    date.setVisibility(View.VISIBLE);
+                    calendarAddOn.setVisibility(View.VISIBLE);
+                }else{
+                    period.setVisibility(View.GONE);
+                    date.setVisibility(View.GONE);
+                    calendarAddOn.setVisibility(View.GONE);
+                }
+            }
+        });
+
         discount.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
@@ -298,13 +581,47 @@ public class storeDeals extends AppCompatActivity{
         builder.setPositiveButton("Submit", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int id) {
+                String totalAmount = "0";
+                String currentAmount = "0";
+                String periodstr = "0";
+                Boolean isAtCost = false;
+                String year = "0";
+                String month = "0";
+                String day = "0";
+                boolean reoccur;
                 if(text.getText().length() == 0){
                     text.setText(warn);
+                }
+                if(limit.isChecked()){
+                    totalAmount = Integer.toString(totalAmnt.getValue());
+                    currentAmount = Integer.toString(currentAmnt.getValue());
+                    reoccur = reoccuring.isChecked();
+                }else{
+                    reoccur = false;
+                    totalAmount = "50";
+                    currentAmount = "50";
+                }
+                if(dealType.getSelectedItemPosition() == 1)
+                    isAtCost = true;
+                if(reoccuring.isChecked()){
+                    periodstr = Integer.toString(period.getSelectedItemPosition());
+                    year = Integer.toString(date.getYear());
+                    month = Integer.toString(date.getMonth());
+                    day = Integer.toString(date.getDayOfMonth());
+                }else{
+                    periodstr = "11";
                 }
                 Deal temp = new Deal(
                         Integer.toString(discount.getProgress()),
                         text.getText().toString(),
-                        Integer.toString(amnt.getValue()),
+                        totalAmount,
+                        currentAmount,
+                        isAtCost,
+                        reoccur,
+                        periodstr,
+                        year,
+                        month,
+                        day,
                         dealID);
                 Dealdataset.set(i, temp);
 

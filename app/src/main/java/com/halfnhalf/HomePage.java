@@ -50,8 +50,7 @@ import java.util.Map;
 
 public class HomePage extends AppCompatActivity {
 
-    private FloatingActionButton profile;
-    private FloatingActionButton messenger;
+    private FloatingActionButton profile,  messenger, buying, selling;
 
     private String storeID;
     private String Userlist;
@@ -64,7 +63,11 @@ public class HomePage extends AppCompatActivity {
     private File mPath;
     public static String MsgID = "";
     public static String allMsgs = "";
+    public static String sellingMsgs = "";
+    public static String buyingMsgs = "";
     public static ArrayList<ArrayList<Message>> Messages;
+    public static ArrayList<ArrayList<Message>> sellingMessages;
+    public static ArrayList<ArrayList<Message>> buyingMessages;
 
     public static RecyclerView.Adapter Summeryadapter;
     private RecyclerView.LayoutManager SummerylayoutManager;
@@ -93,6 +96,8 @@ public class HomePage extends AppCompatActivity {
         }
         initUI();
         Messages = new ArrayList<ArrayList<Message>>();
+        sellingMessages = new ArrayList<ArrayList<Message>>();
+        buyingMessages = new ArrayList<ArrayList<Message>>();
         Bundle bundle = getIntent().getExtras();
         profileData = bundle.getString("data");
         objectID = bundle.getString("objectID");
@@ -114,7 +119,7 @@ public class HomePage extends AppCompatActivity {
             mPath.mkdirs();
             getMsgs();
         }else if(firstLaunch){
-            getNewMsgs(false, HomePage.this);
+            getNewMsgs(false, HomePage.this, 0);
         }
 
         if(!firstLaunch){
@@ -128,7 +133,25 @@ public class HomePage extends AppCompatActivity {
 
             }
             allMsgs = inputString;
-            getNewMsgs(false, HomePage.this);
+            inputString = "";
+            path = getFilesDir() + "/messages/" + "sellingMsgs";
+            try {
+                BufferedReader in = new BufferedReader(new FileReader(path));
+                inputString = in.readLine();
+            } catch (IOException e) {
+
+            }
+            sellingMsgs = inputString;
+            inputString = "";
+            path = getFilesDir() + "/messages/" + "buyingMsgs";
+            try {
+                BufferedReader in = new BufferedReader(new FileReader(path));
+                inputString = in.readLine();
+            } catch (IOException e) {
+
+            }
+            buyingMsgs = inputString;
+            getNewMsgs(false, HomePage.this, 0);
         }
 
 
@@ -144,7 +167,21 @@ public class HomePage extends AppCompatActivity {
         messenger.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                getNewMsgs(true, HomePage.this);
+                getNewMsgs(true, HomePage.this, 0);
+            }
+        });
+
+        buying.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                getNewMsgs(true, HomePage.this, 1);
+            }
+        });
+
+        selling.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                getNewMsgs(true, HomePage.this, 2);
             }
         });
 
@@ -235,6 +272,16 @@ public class HomePage extends AppCompatActivity {
                         }else {
                             allMsgs = "";
                         }
+                        if(response.get("buyingMsgs") != null) {
+                            buyingMsgs = response.get("buyingMsgs").toString();
+                        }else {
+                            buyingMsgs = "";
+                        }
+                        if(response.get("sellingMsgs") != null) {
+                            sellingMsgs = response.get("sellingMsgs").toString();
+                        }else {
+                            sellingMsgs = "";
+                        }
                         String path = getFilesDir() + "/messages/" + "LastLogin";
                         try {
                             BufferedWriter out = new BufferedWriter(new FileWriter(path));
@@ -243,7 +290,7 @@ public class HomePage extends AppCompatActivity {
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
-                        getNewMsgs(false, HomePage.this);
+                        getNewMsgs(false, HomePage.this, 0);
                     }
                     @Override
                     public void handleFault( BackendlessFault fault )
@@ -253,10 +300,11 @@ public class HomePage extends AppCompatActivity {
                 } );
     }
 
-    public static void getNewMsgs(boolean launch, Context c){
+    public static void getNewMsgs(boolean launch, Context c, int type){
         processing = true;
         final boolean tolaunch = launch;
         final Context context = c;
+        final int t = type;
         Backendless.Data.of("Messages").findById(MsgID,
                 new AsyncCallback<Map>() {
                     @Override
@@ -273,68 +321,126 @@ public class HomePage extends AppCompatActivity {
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
-                            if(allMsgs.length() > 6) {
-                                response.put("allMsgs", allMsgs);
-                                Backendless.Persistence.of("Messages").save(response, new AsyncCallback<Map>() {
-                                    @Override
-                                    public void handleResponse(Map response) {
-                                        // Contact objecthas been updated
-                                    }
+                            //                            Log.e("TOTAL MSG", "" +allMsgs);
+                        }
 
-                                    @Override
-                                    public void handleFault(BackendlessFault fault) {
-                                        // an error has occurred, the error code can be retrieved with fault.getCode()
-                                    }
-                                });
-                            }
+                        if(response.get("buyingReceived") != null) {
 
-                            if(allMsgs != null) {
-                                buildMessages(allMsgs);
-                                processing = false;
-                            }
-                            response.put("Received", "");
-                            Backendless.Persistence.of("Messages").save( response, new AsyncCallback<Map>() {
-                                @Override
-                                public void handleResponse( Map response )
-                                {
-                                    if(tolaunch)
-                                        launch(2, context);
-                                }
-                                @Override
-                                public void handleFault( BackendlessFault fault )
-                                {
-                                    // an error has occurred, the error code can be retrieved with fault.getCode()
-                                }
-                            } );
-//                            Log.e("TOTAL MSG", "" +allMsgs);
-                        }else{
-                            if(allMsgs.length() > 6) {
-                                response.put("allMsgs", allMsgs);
-                                Backendless.Persistence.of("Messages").save(response, new AsyncCallback<Map>() {
-                                    @Override
-                                    public void handleResponse(Map response) {
-                                        if(tolaunch)
-                                            launch(2, context);
-                                    }
 
-                                    @Override
-                                    public void handleFault(BackendlessFault fault) {
-                                        // an error has occurred, the error code can be retrieved with fault.getCode()
-                                    }
-                                });
+                            buyingMsgs += response.get("buyingReceived").toString();
+                            Log.e("Buying MSG " + buyingMsgs, "");
+                            String path = context.getFilesDir() + "/messages/" + "buyingMsgs";
+                            try {
+                                BufferedWriter out = new BufferedWriter(new FileWriter(path));
+                                out.write(buyingMsgs);
+                                out.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
                             }
-
-                            if(allMsgs != null) {
-                                buildMessages(allMsgs);
-                                processing = false;
-                            }
-//                            Log.e("TOTAL MSG", "" +allMsgs);
 
                         }
+
+                        if(response.get("sellingReceived") != null) {
+
+
+                            sellingMsgs += response.get("sellingReceived").toString();
+                            Log.e("Selling MSG " + sellingMsgs, "");
+                            String path = context.getFilesDir() + "/messages/" + "sellingMsgs";
+                            try {
+                                BufferedWriter out = new BufferedWriter(new FileWriter(path));
+                                out.write(sellingMsgs);
+                                out.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+
+                        }
+                        if(allMsgs.length() > 6)
+                            response.put("allMsgs", allMsgs);
+                        if(sellingMsgs.length() > 6)
+                            response.put("sellingMsgs", sellingMsgs);
+                        if(buyingMsgs.length() > 6)
+                            response.put("buyingMsgs", buyingMsgs);
+//                                Backendless.Persistence.of("Messages").save(response, new AsyncCallback<Map>() {
+//                                    @Override
+//                                    public void handleResponse(Map response) {
+//                                        // Contact objecthas been updated
+//                                    }
+//
+//                                    @Override
+//                                    public void handleFault(BackendlessFault fault) {
+//                                        // an error has occurred, the error code can be retrieved with fault.getCode()
+//                                    }
+//                                });
+
+
+//                        if(response.get("Received") == null || response.get("buyingReceived") == null || response.get("sellingReceived") == null) {
+//                            if(allMsgs.length() > 6 || sellingMsgs.length() > 6 || buyingMsgs.length() > 6) {
+//                                if(allMsgs.length() > 6)
+//                                    response.put("allMsgs", allMsgs);
+//                                if(sellingMsgs.length() > 6)
+//                                    response.put("sellingMsgs", sellingMsgs);
+//                                if(buyingMsgs.length() > 6)
+//                                    response.put("buyingMsgs", buyingMsgs);
+////                                Backendless.Persistence.of("Messages").save(response, new AsyncCallback<Map>() {
+////                                    @Override
+////                                    public void handleResponse(Map response) {
+////                                        if(tolaunch)
+////                                            launch(2, context);
+////                                    }
+////
+////                                    @Override
+////                                    public void handleFault(BackendlessFault fault) {
+////                                        // an error has occurred, the error code can be retrieved with fault.getCode()
+////                                    }
+////                                });
+//                            }
+//                        }
+
+
+
+                        if(allMsgs != null) {
+                            buildMessages(allMsgs, 0);
+                        }
+                        if(buyingMsgs != null) {
+                            buildMessages(buyingMsgs, 1);
+                        }
+                        if(sellingMsgs != null) {
+                            buildMessages(sellingMsgs, 2);
+                        }
+
+                        response.put("Received", "");
+                        response.put("buyingReceived", "");
+                        response.put("sellingReceived", "");
+                        Backendless.Persistence.of("Messages").save( response, new AsyncCallback<Map>() {
+                            @Override
+                            public void handleResponse( Map response )
+                            {
+                                processing = false;
+                                if(tolaunch) {
+                                    if(t == 0) {
+                                        launch(2, context);
+                                    }else if(t == 1) {
+                                        launch(3, context);
+                                    }else if(t == 2) {
+                                        launch(4, context);
+                                    }
+                                }
+                            }
+                            @Override
+                            public void handleFault( BackendlessFault fault )
+                            {
+                                Log.e("TESTING", " Some Fault " + fault.toString());
+                                // an error has occurred, the error code can be retrieved with fault.getCode()
+                            }
+                        } );
+
                     }
                     @Override
                     public void handleFault( BackendlessFault fault )
                     {
+
+                        processing = false;
                         Log.e("Response = null", "" + fault.toString());   // an error has occurred, the error code can be retrieved with fault.getCode()
                     }
                 } );
@@ -351,48 +457,99 @@ public class HomePage extends AppCompatActivity {
         Directory.delete();
     }
 
-    private static void buildMessages(String data){
-        Messages.clear();
+    private static void buildMessages(String data, int type){
         if(data.length() > 6) {
+            if (type == 0) {
+                Messages.clear();
+            }else if(type == 1){
+                buyingMessages.clear();
+            }else{
+                sellingMessages.clear();
+            }
             String[] MessageData = data.split("#");
             for (int i = 0; i < MessageData.length; i++) {
 //            Log.i("Message Data: ", "" + MessageData[i] + " " +  MessageData[i + 1] + " " +  MessageData[i + 2]);
                 Message temp = new Message();
                 temp.setData(MessageData[i], MessageData[i + 1]);
-                temp.setText(MessageData[i + 2]);
+
+                temp.setText(MessageData[i + 2].replaceAll("~@", "#"));
                 temp.setBelongsToCurrentUser(Backendless.UserService.CurrentUser().getProperty("name").toString().equals(MessageData[i]));
-                if (Messages.size() == 0) {
+                if (i == 0) {
                     ArrayList<Message> tempMessage = new ArrayList<>();
                     tempMessage.add(temp);
-                    Messages.add(tempMessage);
+                    if (type == 0) {
+                        Messages.add(tempMessage);
+                    }else if(type == 1){
+                        buyingMessages.add(tempMessage);
+                    }else{
+                        sellingMessages.add(tempMessage);
+                    }
                 } else {
-                    int index = getIndexofMessage(temp.getData().getSender(), temp.getData().getReceiver());
+                    int index = getIndexofMessage(temp.getData().getSender(), temp.getData().getReceiver(), type);
 //                    Log.i("INDEX: ", "" + index);
                     if (index != -1) {
-                        Messages.get(index).add(temp);
+                        if (type == 0) {
+                            Messages.get(index).add(temp);
+                        }else if(type == 1){
+                            buyingMessages.get(index).add(temp);
+                        }else{
+                            sellingMessages.get(index).add(temp);
+                        }
                     } else {
                         ArrayList<Message> tempMessage = new ArrayList<>();
                         tempMessage.add(temp);
-                        Messages.add(tempMessage);
+                        if (type == 0) {
+                            Messages.add(tempMessage);
+                        }else if(type == 1){
+                            buyingMessages.add(tempMessage);
+                        }else{
+                            sellingMessages.add(tempMessage);
+                        }
                     }
                 }
                 i += 2;
             }
+
+
         }
     }
 
-    public static int getIndexofMessage(String sender, String receiver){
+    public static int getIndexofMessage(String sender, String receiver, int type){
         String name = Backendless.UserService.CurrentUser().getProperty("name").toString();
 //        Log.i(Messages.size() + " Name:" + name, "Sender: " + sender + " Receiver: " + receiver);
+        int size = 0;
+        if (type == 0) {
+            size = Messages.size();
+        }else if(type == 1){
+            size = buyingMessages.size();
+        }else{
+            size = sellingMessages.size();
+        }
         if(sender.equals(name)){
-            for(int i = 0; i < Messages.size(); i++){
-                if(Messages.get(i).get(0).getData().getReceiver().equals(receiver) || Messages.get(i).get(0).getData().getSender().equals(receiver))
-                    return i;
+            for(int i = 0; i < size; i++){
+                if(type == 0){
+                    if (Messages.get(i).get(0).getData().getReceiver().equals(receiver) || Messages.get(i).get(0).getData().getSender().equals(receiver))
+                        return i;
+                }else if(type == 1){
+                    if (buyingMessages.get(i).get(0).getData().getReceiver().equals(receiver) || buyingMessages.get(i).get(0).getData().getSender().equals(receiver))
+                        return i;
+                }else{
+                    if (sellingMessages.get(i).get(0).getData().getReceiver().equals(receiver) || sellingMessages.get(i).get(0).getData().getSender().equals(receiver))
+                        return i;
+                }
             }
         }else{
-            for(int i = 0; i < Messages.size(); i++){
-                if(Messages.get(i).get(0).getData().getSender().equals(sender) || Messages.get(i).get(0).getData().getReceiver().equals(sender))
-                    return i;
+            for(int i = 0; i < size; i++){
+                if(type == 0) {
+                    if (Messages.get(i).get(0).getData().getSender().equals(sender) || Messages.get(i).get(0).getData().getReceiver().equals(sender))
+                        return i;
+                }if(type == 1){
+                    if (buyingMessages.get(i).get(0).getData().getSender().equals(sender) || buyingMessages.get(i).get(0).getData().getReceiver().equals(sender))
+                        return i;
+                }else{
+                    if (sellingMessages.get(i).get(0).getData().getSender().equals(sender) || sellingMessages.get(i).get(0).getData().getReceiver().equals(sender))
+                        return i;
+                }
             }
         }
         return -1;
@@ -409,10 +566,21 @@ public class HomePage extends AppCompatActivity {
                 break;
             case 2:
                 intent = new Intent(c, StartChatActivity.class);
-                intent.putExtra("rawMessage", allMsgs);
+                intent.putExtra("type", 0);
                 intent.putExtra("msgID", MsgID);
                 c.startActivity(intent);
-
+                break;
+            case 3:
+                intent = new Intent(c, StartChatActivity.class);
+                intent.putExtra("type", 1);
+                intent.putExtra("msgID", MsgID);
+                c.startActivity(intent);
+                break;
+            case 4:
+                intent = new Intent(c, StartChatActivity.class);
+                intent.putExtra("type", 2);
+                intent.putExtra("msgID", MsgID);
+                c.startActivity(intent);
                 break;
 
             default:
@@ -423,6 +591,8 @@ public class HomePage extends AppCompatActivity {
     private void initUI() {
         profile = (FloatingActionButton) findViewById(R.id.fab_profileBtn);
         messenger = (FloatingActionButton) findViewById(R.id.fab_Msg);
+        buying = (FloatingActionButton) findViewById(R.id.fab_buy);
+        selling = (FloatingActionButton) findViewById(R.id.fab_sell);
     }
 
     private void logoutFromBackendless(){
@@ -528,9 +698,9 @@ public class HomePage extends AppCompatActivity {
                     temp.setStore(tempStore);
                     int baseval = startindex + 4;//get to the first %
                     List deals = new ArrayList();
-                    for (int d = 0; d < Integer.parseInt(userProfilesdata.get(f)[startindex + 3]); d++) {
+                    for (int d = 0; d < Integer.parseInt(userProfilesdata.get(f)[startindex + 3]); d++){
                         deals.add(Integer.parseInt(userProfilesdata.get(f)[baseval]));
-                        baseval += 3;
+                        baseval += 8;
                     }
                     Collections.sort(deals);
                     Collections.reverse(deals);
@@ -554,9 +724,16 @@ public class HomePage extends AppCompatActivity {
         Store temp = new Store(arrayData[i], arrayData[i+1], remakeString(arrayData[i+2]));
         temp.setNew(false);
         if(Integer.parseInt(arrayData[i+3]) != 0){
-            for (int x = i + 4; x < (i + 4) + Integer.parseInt(arrayData[i + 3]) * 3; x++) {
-                temp.addDeal(arrayData[x], remakeString(arrayData[x + 1]), arrayData[x + 2]);
-                x += 2;
+            for (int x = i + 4; x < (i + 4) + Integer.parseInt(arrayData[i + 3]) * 8; x++) {
+                temp.addDeal(arrayData[x],
+                        remakeString(arrayData[x + 1]),
+                        arrayData[x + 2],
+                        arrayData[x + 3],
+                        Boolean.parseBoolean(arrayData[x + 4]),
+                        Boolean.parseBoolean(arrayData[x + 5]),
+                        arrayData[x + 6],
+                        arrayData[x + 7]);
+                x += 7;
             }
         }
 
@@ -603,7 +780,7 @@ public class HomePage extends AppCompatActivity {
 
         @Override
         public void onClick(View v) {
-            launch(v);
+            //launch(v);
             return;
         }
 

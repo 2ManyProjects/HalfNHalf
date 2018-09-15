@@ -80,18 +80,18 @@ public class SummeryAdapter extends RecyclerView.Adapter<SummeryAdapter.MyViewHo
                 public void onClick(View v) {
                     String rec = currentStore.getUserName();
                     String send = Backendless.UserService.CurrentUser().getProperty("name").toString();
-                    int index = HomePage.getIndexofMessage(send, rec);
+                    int index = HomePage.getIndexofMessage(send, rec, 1);
                     if(index == -1){
                         ArrayList<Message> tempMessage = new ArrayList<>();
-                        HomePage.Messages.add(tempMessage);
-                        index = HomePage.Messages.size() -1;
+                        HomePage.buyingMessages.add(tempMessage);
+                        index = HomePage.buyingMessages.size() -1;
                     }
                     final Intent intent;
                     intent = new Intent(mContext, ChatRoomActivity.class);
                     String name = Backendless.UserService.CurrentUser().getProperty("name").toString();
                     intent.putExtra("name", send);
                     intent.putExtra("othername", rec);
-                    intent.putExtra("rawMessage", HomePage.allMsgs);
+                    intent.putExtra("type", 1);
                     intent.putExtra("index", index);
                     mContext.startActivity(intent);
 

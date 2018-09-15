@@ -42,24 +42,32 @@ public class ChatRoomActivity extends AppCompatActivity {
   String name = "";
   String receiving = "";
   ArrayList<Message> msgs;
-  String allMsg;
+  //String allMsg;
   String MsgID;
   int index;
+  private int type = 0;
+  private String col = "";
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_chat_room);
 
-    HomePage.getNewMsgs(false, ChatRoomActivity.this);
+    HomePage.getNewMsgs(false, ChatRoomActivity.this, 0);
     registerReceiver(receiver, new IntentFilter(
               messageListener.NOTIFICATION));
 
     message = findViewById(R.id.message);
     Bundle bundle = getIntent().getExtras();
-    allMsg = bundle.getString("rawMessage");
+    type = bundle.getInt("type");
     index = bundle.getInt("index");
-    msgs = HomePage.Messages.get(index);
+      if(type == 0) {
+          msgs = HomePage.Messages.get(index);
+      }else if(type == 1) {
+          msgs = HomePage.buyingMessages.get(index);
+      }else if(type == 2) {
+          msgs = HomePage.sellingMessages.get(index);
+      }
 
     name = bundle.getString("name");
     receiving = bundle.getString("othername");
@@ -112,7 +120,7 @@ public class ChatRoomActivity extends AppCompatActivity {
     public void onBackPressed(){
         final Intent intent;
         intent = new Intent(ChatRoomActivity.this, StartChatActivity.class);
-        intent.putExtra("rawMessage", allMsg);
+        intent.putExtra("type", type);
         startActivity(intent);
         ChatRoomActivity.this.finish();
     }
@@ -144,16 +152,13 @@ public class ChatRoomActivity extends AppCompatActivity {
       messageAdapter.push();
     }
 
-  private void handleFault(BackendlessFault fault) {
-    Log.e("chatroom ", fault.toString());
-  }
 
     private BroadcastReceiver receiver = new BroadcastReceiver() {
 
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.e("INCOMMING MSG", "");
-            HomePage.getNewMsgs(false, ChatRoomActivity.this);
+            HomePage.getNewMsgs(false, ChatRoomActivity.this, type);
             displayNewMsgs();
         }
     };
@@ -169,7 +174,13 @@ public class ChatRoomActivity extends AppCompatActivity {
                 }
             }, MainLogin.DELAY_TIME);
         }else{
-            msgs = HomePage.Messages.get(index);
+            if(type == 0) {
+                msgs = HomePage.Messages.get(index);
+            }else if(type == 1) {
+                msgs = HomePage.buyingMessages.get(index);
+            }else if(type == 2) {
+                msgs = HomePage.sellingMessages.get(index);
+            }
             Log.i("Last Msg", "" + msgs.get(msgs.size()-1).toString());
             remakeChat();
         }
@@ -177,24 +188,32 @@ public class ChatRoomActivity extends AppCompatActivity {
 
   //Image Button was pressed
   public void sendMessage(View view) {
-      sendMessage();
+      if(message.getText().toString().length() > 0)
+          sendMessage();
   }
 
   //Enter was pressed
   public void sendMessage() {
     String m = message.getText().toString();
+    if(m.contains("#"))
+        m.replaceAll("#", "~@");
     final Message temp = new Message();
     temp.setText(m);
     temp.setData(data);
     temp.setBelongsToCurrentUser(true);
     messageAdapter.add(temp);
     messagesView.setSelection(messagesView.getCount() - 1);
-      Log.e("EMOJI MMESSAGE ", "" + m);
-    //HomePage.allMsgs += temp.toString();
 
     final String saveData = temp.toString();
     final String otherUser = temp.getData().getReceiver();
-    String path = getFilesDir() + "/messages/" + "allMsgs";
+    String path = "";
+      if(type == 0) {
+          path = getFilesDir() + "/messages/" + "allMsgs";
+      }else if(type == 1) {
+          path = getFilesDir() + "/messages/" + "buyingMsgs";
+      }else if(type == 2) {
+          path = getFilesDir() + "/messages/" + "sellingMsgs";
+      }
     try {
       BufferedWriter out = new BufferedWriter(new FileWriter(path));
       out.append(saveData);
@@ -202,6 +221,17 @@ public class ChatRoomActivity extends AppCompatActivity {
     } catch (IOException e) {
       e.printStackTrace();
     }
+    col = "";
+      if(type == 0) {
+          col = "Received";
+          HomePage.allMsgs += saveData;
+      }else if(type == 1) {
+          col = "sellingReceived";
+          HomePage.buyingMsgs += saveData;
+      }else if(type == 2) {
+          col = "buyingReceived";
+          HomePage.sellingMsgs += saveData;
+      }
 
       String WhereClause = "name = " + "'" + otherUser + "'";
       DataQueryBuilder dataQuery = DataQueryBuilder.create();
@@ -212,11 +242,11 @@ public class ChatRoomActivity extends AppCompatActivity {
                   public void handleResponse( List<Map> response )
                   {
                       String temp = "";
-                      if(response.get(0).get("Received") != null){
-                          temp = response.get(0).get("Received").toString();
+                      if(response.get(0).get(col) != null){
+                          temp = response.get(0).get(col).toString();
                       }
                       final String sendMsgs = temp + saveData;
-                      response.get(0).put("Received", sendMsgs);
+                      response.get(0).put(col, sendMsgs);
                       Backendless.Persistence.of("Messages").save(response.get(0), new AsyncCallback<Map>() {
                           @Override
                           public void handleResponse(Map response) {
@@ -240,23 +270,32 @@ public class ChatRoomActivity extends AppCompatActivity {
               @Override
               public void handleResponse( Map response )
               {
-                if(allMsg.length() > 6) {
-                  allMsg += saveData;
-                  response.put("allMsgs", allMsg);
+                  if(type == 0) {
+                      if(HomePage.allMsgs.length() > 6) {
+                          response.put("allMsgs", HomePage.allMsgs);
+                      }
+                  }else if(type == 1) {
+                      if(HomePage.buyingMsgs.length() > 6) {
+                          response.put("buyingMsgs", HomePage.buyingMsgs);
+                      }
+                  }else if(type == 2) {
+                      if(HomePage.sellingMsgs.length() > 6) {
+                          response.put("sellingMsgs", HomePage.sellingMsgs);
+                      }
+                  }
                   Backendless.Persistence.of("Messages").save(response, new AsyncCallback<Map>() {
-                    @Override
-                    public void handleResponse(Map response) {
-                      // Contact objecthas been updated
-                      message.setText("", TextView.BufferType.EDITABLE);
-                      message.setEnabled(true);
-                    }
+                      @Override
+                      public void handleResponse(Map response) {
+                          // Contact objecthas been updated
+                          message.setText("", TextView.BufferType.EDITABLE);
+                          message.setEnabled(true);
+                      }
 
-                    @Override
-                    public void handleFault(BackendlessFault fault) {
-                      // an error has occurred, the error code can be retrieved with fault.getCode()
-                    }
+                      @Override
+                      public void handleFault(BackendlessFault fault) {
+                          // an error has occurred, the error code can be retrieved with fault.getCode()
+                      }
                   });
-                }
               }
               @Override
               public void handleFault( BackendlessFault fault )
