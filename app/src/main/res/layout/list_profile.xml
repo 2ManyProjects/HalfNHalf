@@ -35,7 +35,6 @@
             android:layout_centerHorizontal="true"
             android:layout_marginTop="15dp"
             android:padding="@dimen/card_margin"
-            android:text="@string/sports_info_placeholder"
             android:theme="@style/ThemeOverlay.AppCompat.Dark"
             android:textColor="@color/colorUser"
             tools:text="TestUserName" />
@@ -47,7 +46,6 @@
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
             android:padding="@dimen/card_margin"
-            android:text="@string/sports_info_placeholder"
             android:textColor="?android:textColorPrimary"
             tools:text="testRate" />
 
@@ -60,7 +58,6 @@
             android:layout_centerHorizontal="true"
             android:layout_marginBottom="20dp"
             android:padding="@dimen/card_margin"
-            android:text="@string/sports_info_placeholder"
             android:textColor="?android:textColorSecondary"
             tools:text="70% 50% 30%" />
 

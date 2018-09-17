@@ -7,6 +7,16 @@ public class storeSummery {
     private int index = 0;
     private String userName;
     private Store storeData;
+    private String profSnapshot = "";
+
+    public String getProfSnapshot() {
+        return profSnapshot;
+    }
+
+    public void setProfSnapshot(String profSnapshot) {
+        this.profSnapshot = profSnapshot;
+    }
+
     public storeSummery(String user, String name, String address){
         this.userName = user;
         this.name = name;

@@ -19,7 +19,6 @@
             android:layout_alignParentStart="true"
             android:layout_alignParentTop="true"
             android:padding="@dimen/card_margin"
-            android:text="@string/sports_info_placeholder"
             android:textColor="@color/colorWarning"
             android:theme="@style/ThemeOverlay.AppCompat.Dark"
             tools:text="testwarn" />
@@ -32,7 +31,6 @@
             android:layout_alignParentBottom="true"
             android:layout_centerHorizontal="true"
             android:padding="@dimen/card_margin"
-            android:text="@string/sports_info_placeholder"
             android:textColor="@color/colorWarning"
             android:theme="@style/ThemeOverlay.AppCompat.Dark"
             tools:text="testwarn" />

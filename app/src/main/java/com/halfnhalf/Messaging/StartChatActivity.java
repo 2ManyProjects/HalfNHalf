@@ -152,16 +152,17 @@ public class StartChatActivity extends AppCompatActivity{
 
   private void populateDataAndSetAdapter() {
     dataModel = new ArrayList<>();
-
-    for(int i = 0; i < allMessages.size(); i++){
-      String otherUser = "";
-      if(Backendless.UserService.CurrentUser().getProperty("name").toString().equals(allMessages.get(i).get(0).getData().getSender())){
-        otherUser = allMessages.get(i).get(0).getData().getReceiver();
-      }else{
-        otherUser = allMessages.get(i).get(0).getData().getSender();
-      }
-      ConversationModel temp = new ConversationModel(otherUser, allMessages.get(i));
-      dataModel.add(temp);
+    if(allMessages.get(0).get(0) != null) {
+        for (int i = 0; i < allMessages.size(); i++) {
+            String otherUser = "";
+            if (Backendless.UserService.CurrentUser().getProperty("name").toString().equals(allMessages.get(i).get(0).getData().getSender())) {
+                otherUser = allMessages.get(i).get(0).getData().getReceiver();
+            } else {
+                otherUser = allMessages.get(i).get(0).getData().getSender();
+            }
+            ConversationModel temp = new ConversationModel(otherUser, allMessages.get(i));
+            dataModel.add(temp);
+        }
     }
   }
 

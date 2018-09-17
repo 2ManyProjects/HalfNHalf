@@ -44,6 +44,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -694,8 +695,40 @@ public class HomePage extends AppCompatActivity {
                 }
                 Store tempStore = makeFirstStore(userProfilesdata.get(f), startindex);
 //                if (Integer.parseInt(userProfilesdata.get(f)[startindex+3]) > 0) {
+                    String snapShot = "0" + "#"
+                            + Backendless.UserService.CurrentUser().getProperty("name") + "#"
+                            + userProfilesdata.get(f)[0] + "#"
+                            + userProfilesdata.get(f)[startindex] + "#"
+                            + userProfilesdata.get(f)[startindex + 1] + "#"
+                            + userProfilesdata.get(f)[startindex + 2] + "#"
+                            + userProfilesdata.get(f)[startindex + 3] + "#";
+                    int snapShotCounter = startindex + 4;
+                    for(int v = 0; v < Integer.parseInt(userProfilesdata.get(f)[startindex + 3]); v++){
+                        snapShot += userProfilesdata.get(f)[snapShotCounter] + "#";
+                        snapShot += userProfilesdata.get(f)[snapShotCounter + 1] + "#";
+                        snapShot += userProfilesdata.get(f)[snapShotCounter + 2] + "#";
+                        snapShot += userProfilesdata.get(f)[snapShotCounter + 3] + "#";
+                        snapShot += userProfilesdata.get(f)[snapShotCounter + 4] + "#";
+                        snapShot += userProfilesdata.get(f)[snapShotCounter + 5] + "#";
+                        snapShot += userProfilesdata.get(f)[snapShotCounter + 6] + "#";
+                        snapShot += userProfilesdata.get(f)[snapShotCounter + 7] + "#";
+                        snapShot += "0" + "#";//Deal Selector
+                        snapShotCounter += 8;
+                    }
+                    Calendar getDat = Calendar.getInstance();
+                    snapShot += Integer.toString(getDat.get(Calendar.YEAR))
+                            + "~" + Integer.toString(getDat.get(Calendar.MONTH))
+                            + "~" + Integer.toString(getDat.get(Calendar.DAY_OF_MONTH)) + "#";
+                    int snapLength = snapShot.length();
+                    String snaplen = Integer.toString(snapLength + Integer.toString(snapLength).length() + 1) + "#";
+                    int startIndex = 2
+                            + new String(Backendless.UserService.CurrentUser().getProperty("name") + "#").length()
+                            + new String(userProfilesdata.get(f)[0] + "#").length();
+                    snapShot = snapShot.substring(0, startIndex) + snaplen + snapShot.substring(startIndex);
                     storeSummery temp = new storeSummery(userProfilesdata.get(f)[0], userProfilesdata.get(f)[startindex + 1], remakeString(userProfilesdata.get(f)[startindex + 2]));
                     temp.setStore(tempStore);
+                    temp.setProfSnapshot(snapShot);
+                    Log.e("PROFILE SNAPSHOT" , " " + temp.getProfSnapshot());
                     int baseval = startindex + 4;//get to the first %
                     List deals = new ArrayList();
                     for (int d = 0; d < Integer.parseInt(userProfilesdata.get(f)[startindex + 3]); d++){

@@ -1,0 +1,22 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".ChatRoomActivity">
+    <item android:id="@+id/modifyDeal"
+        android:title="@string/modifyDeal"
+        android:orderInCategory="100"
+        app:showAsAction="always"/>
+    <item android:id="@+id/selectedDeal"
+        android:title="@string/selectedDeal"
+        android:orderInCategory="100"
+        app:showAsAction="always"/>
+    <item android:id="@+id/lock"
+        android:title="@string/lock"
+        android:orderInCategory="100"
+        app:showAsAction="ifRoom"/>
+    <item android:id="@+id/unlock"
+        android:title="@string/unlock"
+        android:orderInCategory="100"
+        app:showAsAction = "ifRoom"/>
+
+</menu>

@@ -8,8 +8,11 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
@@ -21,6 +24,7 @@ import com.backendless.async.callback.AsyncCallback;
 import com.backendless.exceptions.BackendlessFault;
 import com.backendless.persistence.DataQueryBuilder;
 import com.backendless.rt.messaging.Channel;
+import com.halfnhalf.Displayer;
 import com.halfnhalf.HomePage;
 import com.halfnhalf.MainLogin;
 import com.halfnhalf.R;
@@ -47,7 +51,12 @@ public class ChatRoomActivity extends AppCompatActivity {
   int index;
   private int type = 0;
   private String col = "";
-
+  private boolean firstContact = false;
+  private boolean locked = true;
+  private boolean processing = false;
+  private String OGsnapShot = "";
+  private String snapShot = "";
+  //TODO: to save changes, replace instance of OGsnapShot in sellingData with the modified shapShot and re-upload (Same for buyingData)
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -61,6 +70,11 @@ public class ChatRoomActivity extends AppCompatActivity {
     Bundle bundle = getIntent().getExtras();
     type = bundle.getInt("type");
     index = bundle.getInt("index");
+
+    if(type == 100) { //First Contact
+        type = 1;
+        firstContact = true;
+    }
       if(type == 0) {
           msgs = HomePage.Messages.get(index);
       }else if(type == 1) {
@@ -94,6 +108,12 @@ public class ChatRoomActivity extends AppCompatActivity {
         return handled;
       }
     });
+    if(firstContact){
+        sendMessage();
+    }
+      invalidateOptionsMenu();
+      getData();
+      startTimer();
   }
 
   @Override
@@ -125,7 +145,60 @@ public class ChatRoomActivity extends AppCompatActivity {
         ChatRoomActivity.this.finish();
     }
 
-  private void populateChat(){
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+        getMenuInflater().inflate(R.menu.chat_toolbar, menu);
+        MenuItem modifydeal = menu.findItem(R.id.modifyDeal);
+        MenuItem lock = menu.findItem(R.id.lock);
+        MenuItem selectedDeal = menu.findItem(R.id.selectedDeal);
+        MenuItem unlock = menu.findItem(R.id.unlock);
+        if(type == 1){
+            modifydeal.setVisible(true);
+            lock.setVisible(false);
+            unlock.setVisible(false);
+            selectedDeal.setVisible(false);
+        }else{
+            modifydeal.setVisible(false);
+            if(locked) {
+                lock.setVisible(false);
+                unlock.setVisible(true);
+            }else{
+                lock.setVisible(true);
+                unlock.setVisible(false);
+            }
+            selectedDeal.setVisible(true);
+        }
+        return true;
+    }
+
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.logout) {
+            return true;
+        }else{
+            return super.onOptionsItemSelected(item);
+        }
+    }
+
+    private void startTimer(){
+        if(processing) {
+            new Handler().postDelayed(new Runnable() {
+
+                @Override
+                public void run() {
+                    startTimer();
+                }
+            }, MainLogin.DELAY_TIME);
+        }else{
+            Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
+            setSupportActionBar(myToolbar);
+
+        }
+    }
+
+
+    private void populateChat(){
     for(int i = 0; i < msgs.size(); i++){
       boolean belongsToCurrentUser = msgs.get(i).getData().getSender().equals(name);
       Message temp = new Message();
@@ -186,6 +259,66 @@ public class ChatRoomActivity extends AppCompatActivity {
         }
     }
 
+    private void getData(){
+        processing = true;
+        String WhereClause = "name = " + "'" + receiving + "'";
+        if(type == 2)
+            WhereClause = "name = " + "'" + name + "'";
+
+        DataQueryBuilder dataQuery = DataQueryBuilder.create();
+        dataQuery.setWhereClause(WhereClause);
+        Backendless.Data.of("Messages").find(dataQuery,
+                new AsyncCallback<List<Map>>() {
+                    @Override
+                    public void handleResponse(List<Map> foundUsers) {
+                        if (foundUsers.size() >= 0) {
+                            if (foundUsers.get(0).get("sellingData") != null) {
+                                snapShot = trim(foundUsers.get(0).get("sellingData").toString());
+                                OGsnapShot = snapShot;
+                                Log.i("SNAPSHOT", snapShot + "");
+                                //Trim it down
+                                processing = false;
+                            } else {
+                                Displayer.alertDisplayer("Error retreiving seller Profile: ", "Please Reload Chat", ChatRoomActivity.this);
+                            }
+                        }
+                    }
+                    @Override
+                    public void handleFault(BackendlessFault fault) {
+                        Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+                        Displayer.alertDisplayer("Error retreiving seller Profile: ", "Please Reload Chat", ChatRoomActivity.this);
+                    }
+                });
+
+    }
+
+    private String trim(String str){
+        int startIndex;
+        String buyer;
+        String seller;
+        if(type == 1){
+            buyer = name;
+            seller = receiving;
+        }else{
+            buyer = receiving;
+            seller = name;
+        }
+        if(str.contains("0" + "#" + buyer + "#" + seller + "#")) {
+            locked = false;
+            startIndex = str.indexOf("0" + "#" + buyer + "#" + seller + "#");
+        }else{
+            locked = true;
+            startIndex = str.indexOf("1" + "#" + buyer + "#" + seller + "#");
+        }
+        String lengthval = str.substring(startIndex + new String("0" + "#" + buyer + "#" + seller + "#").length());
+        lengthval = lengthval.substring(0, lengthval.indexOf("#"));
+        int snapLength = Integer.parseInt(lengthval);
+        if(type == 1){
+            startIndex += 2; //The buyer CANNOT LOCK / UNLOCK THE DEAL
+        }
+        return str.substring(startIndex, snapLength);
+    }
+
   //Image Button was pressed
   public void sendMessage(View view) {
       if(message.getText().toString().length() > 0)
@@ -194,7 +327,13 @@ public class ChatRoomActivity extends AppCompatActivity {
 
   //Enter was pressed
   public void sendMessage() {
-    String m = message.getText().toString();
+      String m = "";
+        if(!firstContact) {
+            m = message.getText().toString();
+        }else{
+            m = "Hi, I'm interested in . . .";
+            firstContact = false;
+        }
     if(m.contains("#"))
         m.replaceAll("#", "~@");
     final Message temp = new Message();
@@ -224,13 +363,25 @@ public class ChatRoomActivity extends AppCompatActivity {
     col = "";
       if(type == 0) {
           col = "Received";
-          HomePage.allMsgs += saveData;
+          if(HomePage.allMsgs == null){
+              HomePage.allMsgs = saveData;
+          }else {
+              HomePage.allMsgs += saveData;
+          }
       }else if(type == 1) {
           col = "sellingReceived";
-          HomePage.buyingMsgs += saveData;
+          if(HomePage.buyingMsgs == null){
+              HomePage.buyingMsgs = saveData;
+          }else {
+              HomePage.buyingMsgs += saveData;
+          }
       }else if(type == 2) {
           col = "buyingReceived";
-          HomePage.sellingMsgs += saveData;
+          if(HomePage.sellingMsgs == null){
+              HomePage.sellingMsgs = saveData;
+          }else {
+              HomePage.sellingMsgs += saveData;
+          }
       }
 
       String WhereClause = "name = " + "'" + otherUser + "'";

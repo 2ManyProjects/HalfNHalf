@@ -3,20 +3,30 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:clipToPadding="false"
     android:focusableInTouchMode="true"
     tools:context=".Messaging.ChatRoomActivity">
 
-    <ListView
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/my_toolbar"
         android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="?attr/colorPrimary"
+        android:elevation="4dp"
+        android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
+        app:layout_constraintBottom_toTopOf="parent"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+
+    <ListView
         android:id="@+id/messages_view"
-        android:focusable="true"
-        android:focusableInTouchMode="false"
+        android:layout_width="match_parent"
+        android:layout_height="543dp"
         android:layout_weight="2"
         android:divider="#fff"
-        android:layout_height="wrap_content"
-        />
+        android:focusable="true"
+        android:focusableInTouchMode="false" />
 
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
