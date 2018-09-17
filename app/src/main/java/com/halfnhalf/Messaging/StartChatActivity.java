@@ -92,10 +92,8 @@ public class StartChatActivity extends AppCompatActivity{
       }else if(type == 2) {
           allMessages = HomePage.sellingMessages;
       }
-
-      populateDataAndSetAdapter();
-      initUI();
-      mAdapter.notifyDataSetChanged();
+      HomePage.getNewMsgs(false, StartChatActivity.this, 0);
+      startTimer();
     registerReceiver(receiver, new IntentFilter(
             messageListener.NOTIFICATION));
   }
@@ -152,7 +150,7 @@ public class StartChatActivity extends AppCompatActivity{
 
   private void populateDataAndSetAdapter() {
     dataModel = new ArrayList<>();
-    if(allMessages.get(0).get(0) != null) {
+    if(!allMessages.isEmpty()) {
         for (int i = 0; i < allMessages.size(); i++) {
             String otherUser = "";
             if (Backendless.UserService.CurrentUser().getProperty("name").toString().equals(allMessages.get(i).get(0).getData().getSender())) {

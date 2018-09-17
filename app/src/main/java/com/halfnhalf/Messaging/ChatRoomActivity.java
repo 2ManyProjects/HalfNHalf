@@ -56,6 +56,8 @@ public class ChatRoomActivity extends AppCompatActivity {
   private boolean processing = false;
   private String OGsnapShot = "";
   private String snapShot = "";
+  private boolean completed = false;
+  String [] snapShotdata;
   //TODO: to save changes, replace instance of OGsnapShot in sellingData with the modified shapShot and re-upload (Same for buyingData)
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -113,7 +115,7 @@ public class ChatRoomActivity extends AppCompatActivity {
     }
       invalidateOptionsMenu();
       getData();
-      startTimer();
+      startTimer(0);
   }
 
   @Override
@@ -155,10 +157,15 @@ public class ChatRoomActivity extends AppCompatActivity {
         MenuItem selectedDeal = menu.findItem(R.id.selectedDeal);
         MenuItem unlock = menu.findItem(R.id.unlock);
         if(type == 1){
-            modifydeal.setVisible(true);
             lock.setVisible(false);
             unlock.setVisible(false);
-            selectedDeal.setVisible(false);
+            if(locked) {
+                modifydeal.setVisible(false);
+                selectedDeal.setVisible(true);
+            }else{
+                modifydeal.setVisible(true);
+                selectedDeal.setVisible(false);
+            }
         }else{
             modifydeal.setVisible(false);
             if(locked) {
@@ -173,26 +180,79 @@ public class ChatRoomActivity extends AppCompatActivity {
         return true;
     }
 
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        MenuItem modifydeal = menu.findItem(R.id.modifyDeal);
+        MenuItem lock = menu.findItem(R.id.lock);
+        MenuItem selectedDeal = menu.findItem(R.id.selectedDeal);
+        MenuItem unlock = menu.findItem(R.id.unlock);
+        if(type == 1){
+            lock.setVisible(false);
+            unlock.setVisible(false);
+            if(locked) {
+                modifydeal.setVisible(false);
+                selectedDeal.setVisible(true);
+            }else{
+                modifydeal.setVisible(true);
+                selectedDeal.setVisible(false);
+            }
+        }else{
+            modifydeal.setVisible(false);
+            if(locked) {
+                lock.setVisible(false);
+                unlock.setVisible(true);
+            }else{
+                lock.setVisible(true);
+                unlock.setVisible(false);
+            }
+            selectedDeal.setVisible(true);
+        }
+        return super.onPrepareOptionsMenu(menu);
+    }
+
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.logout) {
+        if (item.getItemId() == R.id.lock) {
+            snapShotdata[0] = "1";
+            locked = true;
+            saveData();
+            startTimer(1);
+            return true;
+        }else if (item.getItemId() == R.id.unlock) {
+            snapShotdata[0] = "0";
+            locked = false;
+            saveData();
+            startTimer(2);
             return true;
         }else{
             return super.onOptionsItemSelected(item);
         }
     }
 
-    private void startTimer(){
+    private void startTimer(int x){
+      final int y = x;
         if(processing) {
             new Handler().postDelayed(new Runnable() {
 
                 @Override
                 public void run() {
-                    startTimer();
+                    startTimer(y);
                 }
             }, MainLogin.DELAY_TIME);
         }else{
-            Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
-            setSupportActionBar(myToolbar);
+            if(y == 0) {
+                Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
+                setSupportActionBar(myToolbar);
+            }else if (y == 1){
+                invalidateOptionsMenu();
+                message.setText("[SYSTEM MESSAGE] " + name + " has locked the deal");
+                sendMessage();
+            }else if(y == 2){
+                invalidateOptionsMenu();
+                message.setText("[SYSTEM MESSAGE] " + name + " has unlocked the deal");
+                sendMessage();
+            }else{
+                invalidateOptionsMenu();
+            }
 
         }
     }
@@ -232,6 +292,8 @@ public class ChatRoomActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             Log.e("INCOMMING MSG", "");
             HomePage.getNewMsgs(false, ChatRoomActivity.this, type);
+            getData();
+            startTimer(50);
             displayNewMsgs();
         }
     };
@@ -275,6 +337,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                             if (foundUsers.get(0).get("sellingData") != null) {
                                 snapShot = trim(foundUsers.get(0).get("sellingData").toString());
                                 OGsnapShot = snapShot;
+                                snapShotdata = snapShot.split("#");
                                 Log.i("SNAPSHOT", snapShot + "");
                                 //Trim it down
                                 processing = false;
@@ -456,6 +519,109 @@ public class ChatRoomActivity extends AppCompatActivity {
             } );
 
     message.getText().clear();
+  }
+
+  private void saveData(){
+        processing = true;
+        String data = "";
+
+        for(int i = 0; i < snapShotdata.length; i++){
+            data += snapShotdata[i] + "#";
+        }
+        String w1 = "";
+        String w2 = "";
+      if(type == 1){
+          w1 = "name = " + "'" + receiving + "'";
+          w2 = "name = " + "'" + name + "'";
+      }else{
+          w1 = "name = " + "'" + name + "'";
+          w2 = "name = " + "'" + receiving + "'";
+      }
+      final String finalData = data;
+      final String secondSave = w2;
+
+      DataQueryBuilder dataQuery = DataQueryBuilder.create();
+      dataQuery.setWhereClause(w1);
+      Backendless.Data.of("Messages").find(dataQuery,
+              new AsyncCallback<List<Map>>() {
+                  @Override
+                  public void handleResponse(List<Map> foundUsers) {
+                      if (foundUsers.size() >= 0) {
+                          if (foundUsers.get(0).get("sellingData") != null) {
+                              String toUpload = foundUsers.get(0).get("sellingData").toString();
+//                              Log.e("Stage 1", "" + toUpload);
+                              toUpload = toUpload.replace(OGsnapShot, finalData);
+//                              Log.e("Stage 1.1", "" + toUpload);
+                              foundUsers.get(0).put("sellingData", toUpload);
+                              Backendless.Persistence.of("Messages").save(foundUsers.get(0), new AsyncCallback<Map>() {
+                                  @Override
+                                  public void handleResponse(Map response) {
+//                                      Log.e("Saved Stage 1", "");
+                                      DataQueryBuilder dataQuery = DataQueryBuilder.create();
+                                      dataQuery.setWhereClause(secondSave);
+                                      Backendless.Data.of("Messages").find(dataQuery,
+                                              new AsyncCallback<List<Map>>() {
+                                                  @Override
+                                                  public void handleResponse(List<Map> foundUsers) {
+                                                      if (foundUsers.size() >= 0) {
+                                                          if (foundUsers.get(0).get("buyingData") != null) {
+
+                                                              String toUpload = foundUsers.get(0).get("buyingData").toString();
+                                                              if(type == 1 && completed){
+                                                                  if(locked){
+                                                                      OGsnapShot = "1" + "#" + OGsnapShot;
+                                                                  }else{
+                                                                      OGsnapShot = "0" + "#" + OGsnapShot;
+                                                                  }
+
+                                                                  toUpload = toUpload.replace(OGsnapShot, "2" + "#" +finalData);
+
+                                                              }else {
+                                                                  toUpload = toUpload.replace(OGsnapShot, finalData);
+                                                              }
+                                                              foundUsers.get(0).put("buyingData", toUpload);
+                                                              Backendless.Persistence.of("Messages").save(foundUsers.get(0), new AsyncCallback<Map>() {
+                                                                  @Override
+                                                                  public void handleResponse(Map response) {
+                                                                    getData();
+                                                                  }
+
+                                                                  @Override
+                                                                  public void handleFault(BackendlessFault fault) {
+                                                                      // an error has occurred, the error code can be retrieved with fault.getCode()
+                                                                  }
+                                                              });
+
+                                                          } else {
+                                                              Displayer.alertDisplayer("Error retreiving Deal Data: ", "Any Changes made, may not have gone through", ChatRoomActivity.this);
+                                                          }
+                                                      }
+                                                  }
+                                                  @Override
+                                                  public void handleFault(BackendlessFault fault) {
+                                                      Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+                                                      Displayer.alertDisplayer("Error retreiving Deal Data: ", "Any Changes made, may not have gone through", ChatRoomActivity.this);
+                                                  }
+                                              });
+                                  }
+
+                                  @Override
+                                  public void handleFault(BackendlessFault fault) {
+                                      // an error has occurred, the error code can be retrieved with fault.getCode()
+                                  }
+                              });
+
+                          } else {
+                              Displayer.alertDisplayer("Error retreiving seller Profile: ", "Please Reload Chat", ChatRoomActivity.this);
+                          }
+                      }
+                  }
+                  @Override
+                  public void handleFault(BackendlessFault fault) {
+                      Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+                      Displayer.alertDisplayer("Error retreiving seller Profile: ", "Please Reload Chat", ChatRoomActivity.this);
+                  }
+              });
   }
 
 }

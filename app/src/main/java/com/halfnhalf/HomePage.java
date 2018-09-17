@@ -704,15 +704,16 @@ public class HomePage extends AppCompatActivity {
                             + userProfilesdata.get(f)[startindex + 3] + "#";
                     int snapShotCounter = startindex + 4;
                     for(int v = 0; v < Integer.parseInt(userProfilesdata.get(f)[startindex + 3]); v++){
-                        snapShot += userProfilesdata.get(f)[snapShotCounter] + "#";
-                        snapShot += userProfilesdata.get(f)[snapShotCounter + 1] + "#";
-                        snapShot += userProfilesdata.get(f)[snapShotCounter + 2] + "#";
-                        snapShot += userProfilesdata.get(f)[snapShotCounter + 3] + "#";
-                        snapShot += userProfilesdata.get(f)[snapShotCounter + 4] + "#";
-                        snapShot += userProfilesdata.get(f)[snapShotCounter + 5] + "#";
-                        snapShot += userProfilesdata.get(f)[snapShotCounter + 6] + "#";
-                        snapShot += userProfilesdata.get(f)[snapShotCounter + 7] + "#";
-                        snapShot += "0" + "#";//Deal Selector
+                        snapShot += userProfilesdata.get(f)[snapShotCounter] + "#";     // rate
+                        snapShot += userProfilesdata.get(f)[snapShotCounter + 1] + "#"; // Constraint
+                        snapShot += userProfilesdata.get(f)[snapShotCounter + 2] + "#"; // TotalAmnt
+                        snapShot += userProfilesdata.get(f)[snapShotCounter + 3] + "#"; // CurrentAmnt
+                        snapShot += "0" + "#";                                          // SelectedAmnt
+                        snapShot += userProfilesdata.get(f)[snapShotCounter + 4] + "#"; // AtCost
+                        snapShot += userProfilesdata.get(f)[snapShotCounter + 5] + "#"; // Reoccuring
+                        snapShot += userProfilesdata.get(f)[snapShotCounter + 6] + "#"; // Period
+                        snapShot += userProfilesdata.get(f)[snapShotCounter + 7] + "#"; // Reoccure Date
+                        snapShot += "0" + "#";                                          // Deal Selector
                         snapShotCounter += 8;
                     }
                     Calendar getDat = Calendar.getInstance();

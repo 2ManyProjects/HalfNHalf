@@ -18,5 +18,13 @@
         android:title="@string/unlock"
         android:orderInCategory="100"
         app:showAsAction = "ifRoom"/>
+    <item android:id="@+id/completeDeal"
+        android:title="@string/completeDeal"
+        android:orderInCategory="100"
+        app:showAsAction = "never"/>
+    <item android:id="@+id/undoCompletion"
+        android:title="@string/undoCompletion"
+        android:orderInCategory="100"
+        app:showAsAction = "never"/>
 
 </menu>
