@@ -18,7 +18,26 @@ public class Deal implements Serializable {
     private boolean reoccuring = false;
     private Calendar currentDate;
     private Calendar resetDate;
+    private int selected = 0;
+    private int selectedAmnt = 0;
 
+    public int getSelected(){
+        return selected;
+    }
+
+    public void setSelected(int sel){
+        this.selected = sel;
+    }
+
+    public int getSelectedAmnt(){
+        return selectedAmnt;
+    }
+
+    public void setSelectedAmnt(int sel){
+        if(sel > Integer.parseInt(currentAmnt))
+            sel = Integer.parseInt(currentAmnt);
+        this.selectedAmnt = sel;
+    }
     public boolean getReoccuring() {
         return reoccuring;
     }
@@ -95,14 +114,27 @@ public class Deal implements Serializable {
         Log.e("Deal Data", "" + temp + " Reoccuring" + Boolean.toString(this.reoccuring));
         return temp;
     }
+    public String toStringSelection(){
+        String temp = "";
+        if(this.reoccuring) {
+            temp = rate + "#" + text + "#" + totalAmnt + "#" + currentAmnt + "#" + Integer.toString(selectedAmnt) + "#" + Boolean.toString(atCost) + "#" + Boolean.toString(reoccuring) + "#" + period + "#" + resetDate.get(Calendar.YEAR) + "~" + resetDate.get(Calendar.MONTH) + "~" + resetDate.get(Calendar.DAY_OF_MONTH) + "#";
+        }else{
+            temp = rate + "#" + text + "#" + totalAmnt + "#" + currentAmnt + "#" + Integer.toString(selectedAmnt) + "#" + Boolean.toString(atCost) + "#" + Boolean.toString(reoccuring) + "#" + "11" + "#" + "0" + "~" + "0" + "~" + "0" + "#";
+        }
+        return temp + Integer.toString(selected) + "#";
+    }
+
+
 
     public Deal(String rate, String text, String totalAmnt, String currentAmnt, boolean atCost, boolean reoccuring, String period, String year, String month, String day){
         this.rate = rate;
         this.text = text;
         this.totalAmnt = totalAmnt;
         this.currentAmnt = currentAmnt;
-        if(Integer.parseInt(this.totalAmnt) >= 50)
+        if(Integer.parseInt(this.totalAmnt) >= 50) {
             limit = false;
+            this.currentAmnt = "50";
+        }
         this.id = UUID.randomUUID().toString();
         this.reoccuring = reoccuring;
         this.atCost = atCost;

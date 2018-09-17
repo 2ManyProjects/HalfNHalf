@@ -24,7 +24,18 @@
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="138dp">
+        android:layout_height="180dp">
+
+        <TextView
+            android:id="@+id/atCost"
+            style="@style/TextAppearance.AppCompat.Subhead"
+            android:layout_width="96dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignTop="@+id/warning"
+            android:layout_marginStart="16dp"
+            android:padding="@dimen/card_margin"
+            android:textColor="?android:textColorSecondary" />
 
         <TextView
             android:id="@+id/warning"
@@ -35,8 +46,8 @@
             android:layout_centerHorizontal="true"
             android:layout_marginTop="15dp"
             android:padding="@dimen/card_margin"
-            android:theme="@style/ThemeOverlay.AppCompat.Dark"
             android:textColor="@color/colorWarning"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark"
             tools:text="testwarn" />
 
         <TextView
@@ -44,7 +55,8 @@
             style="@style/TextAppearance.AppCompat.Subhead"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
+            android:layout_below="@+id/warning"
+            android:layout_centerHorizontal="true"
             android:padding="@dimen/card_margin"
             android:textColor="?android:textColorPrimary"
             tools:text="testRate" />
@@ -54,12 +66,65 @@
             style="@style/TextAppearance.AppCompat.Subhead"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_centerHorizontal="true"
-            android:layout_marginBottom="20dp"
+            android:layout_alignEnd="@+id/atCost"
+            android:layout_below="@+id/reoccur"
             android:padding="@dimen/card_margin"
             android:textColor="?android:textColorSecondary"
-            tools:text="testAmnt" />
+            tools:text="textAmnt" />
+
+        <NumberPicker
+            android:id="@+id/selectedVal"
+            android:layout_width="35dp"
+            android:layout_height="55dp"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="14dp"></NumberPicker>
+
+        <TextView
+            android:id="@+id/currentAmnt"
+            style="@style/TextAppearance.AppCompat.Subhead"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignStart="@+id/Amnt"
+            android:padding="@dimen/card_margin"
+            android:textColor="?android:textColorSecondary"
+            tools:text="currentAmnt" />
+
+        <TextView
+            android:id="@+id/reoccur"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="33dp"
+            android:text="Refresh Date" />
+
+        <TextView
+            android:id="@+id/date"
+            android:layout_width="92dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignTop="@+id/Amnt"
+            android:layout_marginEnd="22dp" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/deSel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentTop="true"
+            android:clickable="true"
+            app:srcCompat="@android:drawable/star_big_on" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/Sel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentTop="true"
+            android:clickable="true"
+            app:srcCompat="@android:drawable/btn_star_big_off" />
 
     </RelativeLayout>
 </android.support.v7.widget.CardView>

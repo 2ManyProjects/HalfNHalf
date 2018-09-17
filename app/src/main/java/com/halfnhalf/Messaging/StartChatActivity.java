@@ -109,7 +109,6 @@ public class StartChatActivity extends AppCompatActivity{
   };
 
   private void startTimer(){
-    Log.i("Timer", "Looping ");
     if(HomePage.processing) {
       new Handler().postDelayed(new Runnable() {
 

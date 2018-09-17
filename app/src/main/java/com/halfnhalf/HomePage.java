@@ -313,7 +313,6 @@ public class HomePage extends AppCompatActivity {
                     {
                         if(response.get("Received") != null) {
                             allMsgs += response.get("Received").toString();
-                            Log.e("MSG " + allMsgs, "");
                             String path = context.getFilesDir() + "/messages/" + "allMsgs";
                             try {
                                 BufferedWriter out = new BufferedWriter(new FileWriter(path));
@@ -329,7 +328,6 @@ public class HomePage extends AppCompatActivity {
 
 
                             buyingMsgs += response.get("buyingReceived").toString();
-                            Log.e("Buying MSG " + buyingMsgs, "");
                             String path = context.getFilesDir() + "/messages/" + "buyingMsgs";
                             try {
                                 BufferedWriter out = new BufferedWriter(new FileWriter(path));
@@ -345,7 +343,6 @@ public class HomePage extends AppCompatActivity {
 
 
                             sellingMsgs += response.get("sellingReceived").toString();
-                            Log.e("Selling MSG " + sellingMsgs, "");
                             String path = context.getFilesDir() + "/messages/" + "sellingMsgs";
                             try {
                                 BufferedWriter out = new BufferedWriter(new FileWriter(path));

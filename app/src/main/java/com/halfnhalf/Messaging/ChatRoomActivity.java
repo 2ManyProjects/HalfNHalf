@@ -43,26 +43,31 @@ public class ChatRoomActivity extends AppCompatActivity {
   private ListView messagesView;
   private MessageAdapter messageAdapter;
   private MemberData data;
-  String name = "";
-  String receiving = "";
+  static String name = "";
+  static String receiving = "";
   ArrayList<Message> msgs;
   //String allMsg;
   String MsgID;
   int index;
-  private int type = 0;
+  public static int type = 0;
   private String col = "";
   private boolean firstContact = false;
-  private boolean locked = true;
-  private boolean processing = false;
-  private String OGsnapShot = "";
-  private String snapShot = "";
+  public static boolean locked = true;
+  public static boolean processing = false;
+  private static String OGsnapShot = "";
+  private static String snapShot = "";
   private boolean completed = false;
-  String [] snapShotdata;
-  //TODO: to save changes, replace instance of OGsnapShot in sellingData with the modified shapShot and re-upload (Same for buyingData)
+  public static String [] snapShotdata;
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_chat_room);
+    snapShot = "";
+    OGsnapShot = "";
+//    snapShotdata = new String [snapShotdata.length];
+    locked = true;
+    processing = false;
+    type = 0;
 
     HomePage.getNewMsgs(false, ChatRoomActivity.this, 0);
     registerReceiver(receiver, new IntentFilter(
@@ -114,7 +119,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         sendMessage();
     }
       invalidateOptionsMenu();
-      getData();
+      getData(ChatRoomActivity.this);
       startTimer(0);
   }
 
@@ -223,10 +228,43 @@ public class ChatRoomActivity extends AppCompatActivity {
             saveData();
             startTimer(2);
             return true;
+        }else if (item.getItemId() == R.id.modifyDeal) {
+
+            Intent intent;
+            intent = new Intent(ChatRoomActivity.this, dealSelection.class);
+            startActivityForResult(intent, 1);
+            return true;
+        }else if (item.getItemId() == R.id.selectedDeal) {
+            int t = 2;
+            Intent intent;
+            intent = new Intent(ChatRoomActivity.this, dealSelection.class);
+            startActivityForResult(intent, 2);
+            return true;
         }else{
             return super.onOptionsItemSelected(item);
         }
     }
+
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 1) {
+            if(resultCode == RESULT_OK) {
+                Bundle bundle = data.getExtras();
+                boolean back = bundle.getBoolean("back");
+                if(!back) {
+                    saveData();
+                    startTimer(3);
+                }
+            }
+        }else if (requestCode == 2) {
+            if(resultCode == RESULT_OK) {
+            }
+        }else if(requestCode == 3){
+            if(resultCode == RESULT_OK) {
+            }
+        }
+    }
+
 
     private void startTimer(int x){
       final int y = x;
@@ -249,6 +287,10 @@ public class ChatRoomActivity extends AppCompatActivity {
             }else if(y == 2){
                 invalidateOptionsMenu();
                 message.setText("[SYSTEM MESSAGE] " + name + " has unlocked the deal");
+                sendMessage();
+            }else if(y == 3){
+                invalidateOptionsMenu();
+                message.setText("[SYSTEM MESSAGE] " + name + " has modified the deal");
                 sendMessage();
             }else{
                 invalidateOptionsMenu();
@@ -292,14 +334,13 @@ public class ChatRoomActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             Log.e("INCOMMING MSG", "");
             HomePage.getNewMsgs(false, ChatRoomActivity.this, type);
-            getData();
+            getData(ChatRoomActivity.this);
             startTimer(50);
             displayNewMsgs();
         }
     };
 
     private void displayNewMsgs(){
-        Log.i("Timer", "Looping ");
         if(HomePage.processing) {
             new Handler().postDelayed(new Runnable() {
 
@@ -321,7 +362,8 @@ public class ChatRoomActivity extends AppCompatActivity {
         }
     }
 
-    private void getData(){
+    public static void getData(Context c){
+        final Context mContext = c;
         processing = true;
         String WhereClause = "name = " + "'" + receiving + "'";
         if(type == 2)
@@ -342,20 +384,20 @@ public class ChatRoomActivity extends AppCompatActivity {
                                 //Trim it down
                                 processing = false;
                             } else {
-                                Displayer.alertDisplayer("Error retreiving seller Profile: ", "Please Reload Chat", ChatRoomActivity.this);
+                                Displayer.alertDisplayer("Error retreiving seller Profile: ", "Please Reload Chat", mContext);
                             }
                         }
                     }
                     @Override
                     public void handleFault(BackendlessFault fault) {
                         Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
-                        Displayer.alertDisplayer("Error retreiving seller Profile: ", "Please Reload Chat", ChatRoomActivity.this);
+                        Displayer.alertDisplayer("Error retreiving seller Profile: ", "Please Reload Chat", mContext);
                     }
                 });
 
     }
 
-    private String trim(String str){
+    private static String trim(String str){
         int startIndex;
         String buyer;
         String seller;
@@ -583,7 +625,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                                                               Backendless.Persistence.of("Messages").save(foundUsers.get(0), new AsyncCallback<Map>() {
                                                                   @Override
                                                                   public void handleResponse(Map response) {
-                                                                    getData();
+                                                                    getData(ChatRoomActivity.this);
                                                                   }
 
                                                                   @Override

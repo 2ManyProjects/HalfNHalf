@@ -6,4 +6,8 @@
         android:title="@string/Save"
         android:orderInCategory="100"
         app:showAsAction="always"/>
+    <item android:id="@+id/back"
+        android:title="Back"
+        android:orderInCategory="100"
+        app:showAsAction="always"/>
 </menu>
