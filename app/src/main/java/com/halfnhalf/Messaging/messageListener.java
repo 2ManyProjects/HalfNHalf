@@ -3,14 +3,23 @@ package com.halfnhalf.Messaging;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.IntentService;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.support.annotation.Nullable;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 import android.os.Process;
@@ -18,6 +27,8 @@ import android.os.Process;
 import com.backendless.Backendless;
 import com.backendless.async.callback.AsyncCallback;
 import com.backendless.exceptions.BackendlessFault;
+import com.halfnhalf.HomePage;
+import com.halfnhalf.R;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -26,15 +37,32 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import static android.app.NotificationManager.IMPORTANCE_HIGH;
 import static com.halfnhalf.HomePage.MsgID;
 
 public class messageListener extends Service {
     private String data;
     public static String NOTIFICATION = "com.halfnhalf.Messaging.receiver";
+    public int counter = 0;
+    public static boolean isloggedIn = true;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O)
+            startForeground(1, makeNotification());
+        else
+            startForeground(1, new Notification());
+    }
+
+    public void setIsloggedIn(boolean bool){
+        this.isloggedIn = bool;
+        Log.e("Current Value: ",  "" + this.isloggedIn);
+    }
 
     public messageListener(Context applicationContext) {
         super();
-        Log.i("HERE", "here I am!");
+        Log.i("Loading ", "Message Listener");
     }
 
     public messageListener() {
@@ -49,14 +77,52 @@ public class messageListener extends Service {
 
     @Override
     public void onDestroy() {
+        if(isloggedIn) {
+            Intent broadcastIntent = new Intent("restartingService");
+            broadcastIntent.setClass(this, restartListener.class);
+            this.sendBroadcast(broadcastIntent);
+            Log.i("EXIT", "is Logged in, Restart!");
+            stoptimertask();
+        }else{
+            Log.i("EXIT", "ondestroy!");
+            stoptimertask();
+        }
         super.onDestroy();
-        Log.i("EXIT" , "ondestroy!");
-        Intent broadcastIntent = new Intent("restartService");
-        sendBroadcast(broadcastIntent);
-        stoptimertask();
-        //startService(new Intent(this, messageListener.class));
-        //TODO get it to restart
     }
+
+    private Notification makeNotification(){
+
+        String CHANNEL_ONE_ID = "com.halfnhalf.messaging";
+        String CHANNEL_ONE_NAME = "Channel One";
+        NotificationChannel notificationChannel = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            notificationChannel = new NotificationChannel(CHANNEL_ONE_ID,
+                    CHANNEL_ONE_NAME, IMPORTANCE_HIGH);
+            notificationChannel.enableLights(true);
+            notificationChannel.setLightColor(Color.RED);
+            notificationChannel.setShowBadge(true);
+            notificationChannel.setSound(null, null);
+            notificationChannel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+            NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            manager.createNotificationChannel(notificationChannel);
+        }
+
+        Bitmap icon = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
+        Notification notification = new Notification.Builder(getApplicationContext())
+                .setChannelId(CHANNEL_ONE_ID)
+                .setSound(null)
+                .setContentTitle(getString(R.string.NotificationTitle))
+                .setContentText(getString(R.string.NotificationContent))
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setLargeIcon(icon)
+                .build();
+
+        Intent notificationIntent = new Intent(getApplicationContext(), HomePage.class);
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        notification.contentIntent = PendingIntent.getActivity(getApplicationContext(), 0, notificationIntent, 0);
+        return notification;
+    }
+
 
     private Timer timer;
     private TimerTask timerTask;
@@ -69,29 +135,19 @@ public class messageListener extends Service {
         timer.schedule(timerTask, 1000, 4000); //
     }
 
-    private boolean isMyServiceRunning(Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                Log.i ("isMyServiceRunning?", true+"");
-                return true;
-            }
-        }
-        Log.i ("isMyServiceRunning?", false+"");
-        return false;
-    }
 
 
     public void initializeTimerTask() {
         timerTask = new TimerTask() {
             public void run() {
+                Log.i("still Running", "" + (counter++));
                 getMsg();
             }
         };
     }
 
     public void stoptimertask() {
-        if (timer != null) {
+        if (timer != null){
             timer.cancel();
             timer = null;
         }

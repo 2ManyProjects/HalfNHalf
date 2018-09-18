@@ -46,6 +46,7 @@ import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 
 public class FindStore extends AppCompatActivity {
+
     public static RecyclerView.Adapter adapterStores;
     private RecyclerView.LayoutManager layoutManager;
     private RecyclerView recyclerView;

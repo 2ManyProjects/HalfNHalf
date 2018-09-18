@@ -4,6 +4,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
 
     <application
         android:allowBackup="true"
@@ -23,6 +24,20 @@
         </activity>
         <activity android:name=".RestorePasswordActivity" />
         <activity android:name=".RegisterActivity" />
+
+        <service
+            android:name=".Messaging.messageListener"
+            android:enabled="true" />
+
+        <receiver
+            android:name="com.halfnhalf.Messaging.restartListener"
+            android:enabled="true"
+            android:exported="true"
+            android:label="RestartServiceWhenStopped">
+            <intent-filter>
+                <action android:name="restartingService" />
+            </intent-filter>
+        </receiver>
         <activity
             android:name=".HomePage"
             android:label="@string/title_activity_home_page"
@@ -41,20 +56,6 @@
         <activity
             android:name=".Messaging.ChatRoomActivity"
             android:windowSoftInputMode="adjustResize" />
-
-        <service
-            android:name=".Messaging.messageListener"
-            android:exported="false" />
-
-        <receiver
-            android:name=".Messaging.restartListener"
-            android:enabled="true"
-            android:exported="true"
-            android:label="RestartServiceWhenStopped">
-            <intent-filter>
-                <action android:name="restartService" />
-            </intent-filter>
-        </receiver>
 
         <activity android:name=".Messaging.dealSelection"></activity>
     </application>

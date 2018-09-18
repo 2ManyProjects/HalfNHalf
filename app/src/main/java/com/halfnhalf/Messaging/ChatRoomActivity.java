@@ -420,8 +420,10 @@ public class ChatRoomActivity extends AppCompatActivity {
         int snapLength = Integer.parseInt(lengthval);
         if(type == 1){
             startIndex += 2; //The buyer CANNOT LOCK / UNLOCK THE DEAL
+            snapLength -= 2;
         }
-        return str.substring(startIndex, snapLength);
+        Log.e("Trimmed: ", "" + str.substring(startIndex, snapLength + startIndex));
+        return str.substring(startIndex, snapLength + startIndex);
     }
 
   //Image Button was pressed

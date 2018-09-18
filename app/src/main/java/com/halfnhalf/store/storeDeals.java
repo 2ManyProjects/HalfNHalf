@@ -455,7 +455,7 @@ public class storeDeals extends AppCompatActivity{
         totalAmnt.setMinValue(1);
         totalAmnt.setMaxValue(40);
         currentAmnt.setMinValue(1);
-        currentAmnt.setMaxValue(1);
+        currentAmnt.setMaxValue(Integer.parseInt(deal.getTotalAmnt()));
         barVal.setText(deal.getRate() + "%");
 
         if(deal.getAtCost()){

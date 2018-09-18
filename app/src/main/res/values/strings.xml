@@ -7,6 +7,9 @@
     <string name="selectedDeal">Selected Deal</string>
     <string name="completeDeal">Complete Deal</string>
     <string name="undoCompletion">Undo Completion</string>
+    <string name="NotificationTitle">HalfnHalfMessageListener</string>
+    <string name="NotificationContent">Some Content I guess</string>
+
 
 
     <string name="app_name">Half N Half</string>

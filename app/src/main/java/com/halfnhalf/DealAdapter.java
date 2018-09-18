@@ -92,7 +92,7 @@ public class DealAdapter extends RecyclerView.Adapter<DealAdapter.MyViewHolder> 
             mAmnt.setText(deal.getTotalAmnt());
             selected.hide();
             deselected.hide();
-            if(type == 0 || type == 2){
+            if(type == 0){
                 selectedVal.setVisibility(View.GONE);
             }
             if(deal.getAtCost()){
@@ -106,9 +106,12 @@ public class DealAdapter extends RecyclerView.Adapter<DealAdapter.MyViewHolder> 
                 mReoccur.setVisibility(View.GONE);
                 mDate.setVisibility(View.GONE);
                 selectedVal.setMaxValue(50);
+                selectedVal.setValue(50);
             }else{
+                selectedVal.setMaxValue(Integer.parseInt(deal.getCurrentAmnt()));
                 mAmnt.setText(deal.getTotalAmnt());
                 mCurrentAmnt.setText(deal.getCurrentAmnt());
+                selectedVal.setValue(deal.getSelectedAmnt());
                 if(deal.getReoccuring()) {
                     mReoccur.setVisibility(View.VISIBLE);
                     mDate.setVisibility(View.VISIBLE);
@@ -116,7 +119,6 @@ public class DealAdapter extends RecyclerView.Adapter<DealAdapter.MyViewHolder> 
                             deal.getResetDate().get(Calendar.MONTH) + "-" +
                             deal.getResetDate().get(Calendar.DAY_OF_MONTH));
                 }
-                selectedVal.setMaxValue(Integer.parseInt(deal.getCurrentAmnt()));
             }
 
             if(type > 0){
@@ -161,6 +163,8 @@ public class DealAdapter extends RecyclerView.Adapter<DealAdapter.MyViewHolder> 
                     }
                 });
             }
+            if(type == 2)
+                selectedVal.setEnabled(false);
 
             //Get the current sport
             mCurrentDeal = deal;

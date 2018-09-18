@@ -87,14 +87,14 @@ public class HomePage extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_home_page);
-
         ctx = this;
+        setContentView(R.layout.activity_home_page);
         mMessages = new messageListener(getCtx());
         mServiceIntent = new Intent(getCtx(), mMessages.getClass());
         if (!isMyServiceRunning(mMessages.getClass())) {
             startService(mServiceIntent);
         }
+        mMessages.setIsloggedIn(true);
         initUI();
         Messages = new ArrayList<ArrayList<Message>>();
         sellingMessages = new ArrayList<ArrayList<Message>>();
@@ -239,7 +239,7 @@ public class HomePage extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         stopService(mServiceIntent);
-        Log.i("MAINACT", "onDestroy!");
+        Log.i("HomePage ", "onDestroy!");
         super.onDestroy();
 
     }
@@ -326,8 +326,11 @@ public class HomePage extends AppCompatActivity {
 
                         if(response.get("buyingReceived") != null) {
 
-
-                            buyingMsgs += response.get("buyingReceived").toString();
+                            if(buyingMsgs == null){
+                                buyingMsgs = response.get("buyingReceived").toString();
+                            }else {
+                                buyingMsgs += response.get("buyingReceived").toString();
+                            }
                             String path = context.getFilesDir() + "/messages/" + "buyingMsgs";
                             try {
                                 BufferedWriter out = new BufferedWriter(new FileWriter(path));
@@ -341,8 +344,11 @@ public class HomePage extends AppCompatActivity {
 
                         if(response.get("sellingReceived") != null) {
 
-
-                            sellingMsgs += response.get("sellingReceived").toString();
+                            if(sellingMsgs == null){
+                                sellingMsgs = response.get("sellingReceived").toString();
+                            }else {
+                                sellingMsgs += response.get("sellingReceived").toString();
+                            }
                             String path = context.getFilesDir() + "/messages/" + "sellingMsgs";
                             try {
                                 BufferedWriter out = new BufferedWriter(new FileWriter(path));
@@ -359,41 +365,6 @@ public class HomePage extends AppCompatActivity {
                             response.put("sellingMsgs", sellingMsgs);
                         if(buyingMsgs.length() > 6)
                             response.put("buyingMsgs", buyingMsgs);
-//                                Backendless.Persistence.of("Messages").save(response, new AsyncCallback<Map>() {
-//                                    @Override
-//                                    public void handleResponse(Map response) {
-//                                        // Contact objecthas been updated
-//                                    }
-//
-//                                    @Override
-//                                    public void handleFault(BackendlessFault fault) {
-//                                        // an error has occurred, the error code can be retrieved with fault.getCode()
-//                                    }
-//                                });
-
-
-//                        if(response.get("Received") == null || response.get("buyingReceived") == null || response.get("sellingReceived") == null) {
-//                            if(allMsgs.length() > 6 || sellingMsgs.length() > 6 || buyingMsgs.length() > 6) {
-//                                if(allMsgs.length() > 6)
-//                                    response.put("allMsgs", allMsgs);
-//                                if(sellingMsgs.length() > 6)
-//                                    response.put("sellingMsgs", sellingMsgs);
-//                                if(buyingMsgs.length() > 6)
-//                                    response.put("buyingMsgs", buyingMsgs);
-////                                Backendless.Persistence.of("Messages").save(response, new AsyncCallback<Map>() {
-////                                    @Override
-////                                    public void handleResponse(Map response) {
-////                                        if(tolaunch)
-////                                            launch(2, context);
-////                                    }
-////
-////                                    @Override
-////                                    public void handleFault(BackendlessFault fault) {
-////                                        // an error has occurred, the error code can be retrieved with fault.getCode()
-////                                    }
-////                                });
-//                            }
-//                        }
 
 
 
@@ -793,6 +764,7 @@ public class HomePage extends AppCompatActivity {
 
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.logout) {
+            mMessages.setIsloggedIn(false);
             logoutFromBackendless();
             return true;
         }else{
