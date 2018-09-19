@@ -26,5 +26,9 @@
         android:title="@string/undoCompletion"
         android:orderInCategory="100"
         app:showAsAction = "never"/>
+    <item android:id="@+id/DealCompleted"
+        android:title="@string/DealCompleted"
+        android:orderInCategory="100"
+        app:showAsAction = "always"/>
 
 </menu>

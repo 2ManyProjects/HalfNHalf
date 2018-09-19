@@ -124,6 +124,32 @@ public class SummeryAdapter extends RecyclerView.Adapter<SummeryAdapter.MyViewHo
                                                 });
                                         AlertDialog ok = builder.create();
                                         ok.show();
+                                    }else if(sellingData.contains("4" + "#" + currentUser + "#" + sellingUser + "#")){
+                                        AlertDialog.Builder builder = new AlertDialog.Builder(mContext)
+                                                .setCancelable(false)
+                                                .setTitle("Deal in Progess")
+                                                .setMessage("You have Completed the deal but  " + sellingUser + " has not")
+                                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                                    @Override
+                                                    public void onClick(DialogInterface dialog, int which) {
+                                                        dialog.cancel();
+                                                    }
+                                                });
+                                        AlertDialog ok = builder.create();
+                                        ok.show();
+                                    }else if(sellingData.contains("5" + "#" + currentUser + "#" + sellingUser + "#")){
+                                        AlertDialog.Builder builder = new AlertDialog.Builder(mContext)
+                                                .setCancelable(false)
+                                                .setTitle("Deal in Progess")
+                                                .setMessage(sellingUser + "Has Completed the deal you have not")
+                                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                                    @Override
+                                                    public void onClick(DialogInterface dialog, int which) {
+                                                        dialog.cancel();
+                                                    }
+                                                });
+                                        AlertDialog ok = builder.create();
+                                        ok.show();
                                     }else{
                                         launch(sum);
                                     }

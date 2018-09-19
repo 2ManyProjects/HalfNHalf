@@ -56,7 +56,9 @@ public class ChatRoomActivity extends AppCompatActivity {
   public static boolean processing = false;
   private static String OGsnapShot = "";
   private static String snapShot = "";
-  private boolean completed = false;
+  private static boolean completed = false;
+  private static boolean sellercompleted = false;
+  private static boolean buyercompleted = false;
   public static String [] snapShotdata;
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +70,9 @@ public class ChatRoomActivity extends AppCompatActivity {
     locked = true;
     processing = false;
     type = 0;
+    buyercompleted = false;
+    sellercompleted = false;
+    completed = false;
 
     HomePage.getNewMsgs(false, ChatRoomActivity.this, 0);
     registerReceiver(receiver, new IntentFilter(
@@ -118,7 +123,6 @@ public class ChatRoomActivity extends AppCompatActivity {
     if(firstContact){
         sendMessage();
     }
-      invalidateOptionsMenu();
       getData(ChatRoomActivity.this);
       startTimer(0);
   }
@@ -157,92 +161,186 @@ public class ChatRoomActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
         getMenuInflater().inflate(R.menu.chat_toolbar, menu);
+        MenuItem complete = menu.findItem(R.id.DealCompleted);
         MenuItem modifydeal = menu.findItem(R.id.modifyDeal);
         MenuItem lock = menu.findItem(R.id.lock);
         MenuItem selectedDeal = menu.findItem(R.id.selectedDeal);
         MenuItem unlock = menu.findItem(R.id.unlock);
-        if(type == 1){
-            lock.setVisible(false);
-            unlock.setVisible(false);
-            if(locked) {
+        MenuItem completeDeal = menu.findItem(R.id.completeDeal);
+        MenuItem undo = menu.findItem(R.id.undoCompletion);
+        if(!completed) {
+            complete.setVisible(false);
+            if (type == 1) {
+                if (buyercompleted) {
+                    undo.setVisible(true);
+                    completeDeal.setVisible(false);
+                } else {
+                    undo.setVisible(false);
+                    completeDeal.setVisible(true);
+                }
+                lock.setVisible(false);
+                unlock.setVisible(false);
+                if (locked) {
+                    modifydeal.setVisible(false);
+                    selectedDeal.setVisible(true);
+                } else {
+                    modifydeal.setVisible(true);
+                    selectedDeal.setVisible(false);
+                }
+            } else {
+                if (sellercompleted) {
+                    undo.setVisible(true);
+                    completeDeal.setVisible(false);
+                } else {
+                    undo.setVisible(false);
+                    completeDeal.setVisible(true);
+                }
                 modifydeal.setVisible(false);
+                if (locked) {
+                    lock.setVisible(false);
+                    unlock.setVisible(true);
+                } else {
+                    lock.setVisible(true);
+                    unlock.setVisible(false);
+                }
                 selectedDeal.setVisible(true);
-            }else{
-                modifydeal.setVisible(true);
-                selectedDeal.setVisible(false);
             }
         }else{
             modifydeal.setVisible(false);
-            if(locked) {
-                lock.setVisible(false);
-                unlock.setVisible(true);
-            }else{
-                lock.setVisible(true);
-                unlock.setVisible(false);
-            }
-            selectedDeal.setVisible(true);
+            lock.setVisible(false);
+            selectedDeal.setVisible(false);
+            unlock.setVisible(false);
+            completeDeal.setVisible(false);
+            undo.setVisible(false);
+            complete.setVisible(true);
         }
         return true;
     }
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
+        MenuItem complete = menu.findItem(R.id.DealCompleted);
         MenuItem modifydeal = menu.findItem(R.id.modifyDeal);
         MenuItem lock = menu.findItem(R.id.lock);
         MenuItem selectedDeal = menu.findItem(R.id.selectedDeal);
         MenuItem unlock = menu.findItem(R.id.unlock);
-        if(type == 1){
-            lock.setVisible(false);
-            unlock.setVisible(false);
-            if(locked) {
+        MenuItem completeDeal = menu.findItem(R.id.completeDeal);
+        MenuItem undo = menu.findItem(R.id.undoCompletion);
+        if(!completed) {
+            complete.setVisible(false);
+            if (type == 1) {
+                if (buyercompleted) {
+                    undo.setVisible(true);
+                    completeDeal.setVisible(false);
+                } else {
+                    undo.setVisible(false);
+                    completeDeal.setVisible(true);
+                }
+                lock.setVisible(false);
+                unlock.setVisible(false);
+                if (locked) {
+                    modifydeal.setVisible(false);
+                    selectedDeal.setVisible(true);
+                } else {
+                    modifydeal.setVisible(true);
+                    selectedDeal.setVisible(false);
+                }
+            } else {
+                if (sellercompleted) {
+                    undo.setVisible(true);
+                    completeDeal.setVisible(false);
+                } else {
+                    undo.setVisible(false);
+                    completeDeal.setVisible(true);
+                }
                 modifydeal.setVisible(false);
+                if (locked) {
+                    lock.setVisible(false);
+                    unlock.setVisible(true);
+                } else {
+                    lock.setVisible(true);
+                    unlock.setVisible(false);
+                }
                 selectedDeal.setVisible(true);
-            }else{
-                modifydeal.setVisible(true);
-                selectedDeal.setVisible(false);
             }
         }else{
             modifydeal.setVisible(false);
-            if(locked) {
-                lock.setVisible(false);
-                unlock.setVisible(true);
-            }else{
-                lock.setVisible(true);
-                unlock.setVisible(false);
-            }
-            selectedDeal.setVisible(true);
+            lock.setVisible(false);
+            selectedDeal.setVisible(false);
+            unlock.setVisible(false);
+            completeDeal.setVisible(false);
+            undo.setVisible(false);
+            complete.setVisible(true);
         }
         return super.onPrepareOptionsMenu(menu);
     }
 
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.lock) {
-            snapShotdata[0] = "1";
-            locked = true;
-            saveData();
-            startTimer(1);
-            return true;
-        }else if (item.getItemId() == R.id.unlock) {
-            snapShotdata[0] = "0";
-            locked = false;
-            saveData();
-            startTimer(2);
-            return true;
-        }else if (item.getItemId() == R.id.modifyDeal) {
-
-            Intent intent;
-            intent = new Intent(ChatRoomActivity.this, dealSelection.class);
-            startActivityForResult(intent, 1);
-            return true;
-        }else if (item.getItemId() == R.id.selectedDeal) {
-            int t = 2;
-            Intent intent;
-            intent = new Intent(ChatRoomActivity.this, dealSelection.class);
-            startActivityForResult(intent, 2);
-            return true;
-        }else{
-            return super.onOptionsItemSelected(item);
-        }
+      if(!completed) {
+          if (item.getItemId() == R.id.lock) {
+              snapShotdata[0] = "1";
+              locked = true;
+              saveData();
+              startTimer(1);
+              return true;
+          } else if (item.getItemId() == R.id.unlock) {
+              snapShotdata[0] = "0";
+              locked = false;
+              saveData();
+              startTimer(2);
+              return true;
+          } else if (item.getItemId() == R.id.modifyDeal) {
+              Intent intent;
+              intent = new Intent(ChatRoomActivity.this, dealSelection.class);
+              startActivityForResult(intent, 1);
+              return true;
+          } else if (item.getItemId() == R.id.selectedDeal) {
+              int t = 2;
+              Intent intent;
+              intent = new Intent(ChatRoomActivity.this, dealSelection.class);
+              startActivityForResult(intent, 2);
+              return true;
+          } else if (item.getItemId() == R.id.completeDeal) {
+              if (type == 1) {
+                  if (sellercompleted)
+                      snapShotdata[0] = "6";
+                  else
+                      snapShotdata[0] = "4";
+              } else if (type == 2) {
+                  if (buyercompleted)
+                      snapShotdata[0] = "6";
+                  else
+                      snapShotdata[0] = "5";
+              }
+              saveData();
+              startTimer(4);
+              return true;
+          } else if (item.getItemId() == R.id.undoCompletion) {
+              if (type == 1) {
+                  if (sellercompleted)
+                      snapShotdata[0] = "5";
+                  else if (locked)
+                      snapShotdata[0] = "1";
+                  else
+                      snapShotdata[0] = "0";
+              } else if (type == 2) {
+                  if (buyercompleted)
+                      snapShotdata[0] = "4";
+                  else if (locked)
+                      snapShotdata[0] = "1";
+                  else
+                      snapShotdata[0] = "0";
+              }
+              saveData();
+              startTimer(5);
+              return true;
+          } else {
+              return super.onOptionsItemSelected(item);
+          }
+      }else if (item.getItemId() == R.id.DealCompleted) {
+          Displayer.alertDisplayer("This Deal is already Complete", "please start a new one", getApplicationContext());
+      }
+        return super.onOptionsItemSelected(item);
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -277,25 +375,35 @@ public class ChatRoomActivity extends AppCompatActivity {
                 }
             }, MainLogin.DELAY_TIME);
         }else{
-            if(y == 0) {
-                Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
-                setSupportActionBar(myToolbar);
-            }else if (y == 1){
-                invalidateOptionsMenu();
-                message.setText("[SYSTEM MESSAGE] " + name + " has locked the deal");
-                sendMessage();
-            }else if(y == 2){
-                invalidateOptionsMenu();
-                message.setText("[SYSTEM MESSAGE] " + name + " has unlocked the deal");
-                sendMessage();
-            }else if(y == 3){
-                invalidateOptionsMenu();
-                message.setText("[SYSTEM MESSAGE] " + name + " has modified the deal");
-                sendMessage();
-            }else{
-                invalidateOptionsMenu();
+            if(!completed) {
+                if (y == 0) {
+                    Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
+                    setSupportActionBar(myToolbar);
+                    invalidateOptionsMenu();
+                } else if (y == 1) {
+                    invalidateOptionsMenu();
+                    message.setText("[SYSTEM MESSAGE] " + name + " has locked the deal");
+                    sendMessage();
+                } else if (y == 2) {
+                    invalidateOptionsMenu();
+                    message.setText("[SYSTEM MESSAGE] " + name + " has unlocked the deal");
+                    sendMessage();
+                } else if (y == 3) {
+                    invalidateOptionsMenu();
+                    message.setText("[SYSTEM MESSAGE] " + name + " has modified the deal");
+                    sendMessage();
+                } else if (y == 4) {
+                    invalidateOptionsMenu();
+                    message.setText("[SYSTEM MESSAGE] " + name + " has Completed the deal");
+                    sendMessage();
+                } else if (y == 5) {
+                    invalidateOptionsMenu();
+                    message.setText("[SYSTEM MESSAGE] " + name + " has Undone their Completion");
+                    sendMessage();
+                } else {
+                    invalidateOptionsMenu();
+                }
             }
-
         }
     }
 
@@ -380,7 +488,21 @@ public class ChatRoomActivity extends AppCompatActivity {
                                 snapShot = trim(foundUsers.get(0).get("sellingData").toString());
                                 OGsnapShot = snapShot;
                                 snapShotdata = snapShot.split("#");
+                                if(!snapShotdata[0].equals("0")) {
+                                    locked = true;
+                                }else{
+                                    locked = false;
+                                }
+                                if(snapShotdata[0].equals("4")){
+                                    buyercompleted = true;
+                                }else if(snapShotdata[0].equals("5")){
+                                    sellercompleted = true;
+                                }else if(snapShotdata[0].equals("6")){
+                                    completed = true;
+                                }
                                 Log.i("SNAPSHOT", snapShot + "");
+                                if(completed)
+                                    Displayer.alertDisplayer("THIS DEAL IS COMPLETE", "Please start a new one", mContext);
                                 //Trim it down
                                 processing = false;
                             } else {
@@ -401,6 +523,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         int startIndex;
         String buyer;
         String seller;
+        Log.e("VALUE: ", "" + str);
         if(type == 1){
             buyer = name;
             seller = receiving;
@@ -409,19 +532,24 @@ public class ChatRoomActivity extends AppCompatActivity {
             seller = name;
         }
         if(str.contains("0" + "#" + buyer + "#" + seller + "#")) {
-            locked = false;
             startIndex = str.indexOf("0" + "#" + buyer + "#" + seller + "#");
+        }else if(str.contains("4" + "#" + buyer + "#" + seller + "#")) {
+            startIndex = str.indexOf("4" + "#" + buyer + "#" + seller + "#");
+        }else if(str.contains("5" + "#" + buyer + "#" + seller + "#")) {
+            startIndex = str.indexOf("5" + "#" + buyer + "#" + seller + "#");
+        }else if(str.contains("6" + "#" + buyer + "#" + seller + "#")) {
+            startIndex = str.indexOf("6" + "#" + buyer + "#" + seller + "#");
         }else{
-            locked = true;
             startIndex = str.indexOf("1" + "#" + buyer + "#" + seller + "#");
         }
         String lengthval = str.substring(startIndex + new String("0" + "#" + buyer + "#" + seller + "#").length());
+        Log.e("LENGTH: ", "" + lengthval);
         lengthval = lengthval.substring(0, lengthval.indexOf("#"));
         int snapLength = Integer.parseInt(lengthval);
-        if(type == 1){
-            startIndex += 2; //The buyer CANNOT LOCK / UNLOCK THE DEAL
-            snapLength -= 2;
-        }
+//        if(type == 1){
+//            startIndex += 2; //The buyer CANNOT LOCK / UNLOCK THE DEAL
+//            snapLength -= 2;
+//        }
         Log.e("Trimmed: ", "" + str.substring(startIndex, snapLength + startIndex));
         return str.substring(startIndex, snapLength + startIndex);
     }

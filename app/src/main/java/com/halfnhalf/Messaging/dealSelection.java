@@ -79,12 +79,12 @@ public class dealSelection extends AppCompatActivity {
     }
 
     private void init(){
-        int startindex;
-        if(type == 1){
-            startindex = 7;
-        }else{
-            startindex = 8;
-        }
+        int startindex = 8;
+//        if(type == 1){
+//            startindex = 7;
+//        }else{
+//            startindex = 8;
+//        }
         for(int x = 0; x < startindex; x++){
             headerData += data[x] + "#";
         }
@@ -174,7 +174,7 @@ public class dealSelection extends AppCompatActivity {
             if(y == 0) {
                 if(ChatRoomActivity.locked && type == 1){
                     invalidateOptionsMenu();
-                    Displayer.alertDisplayer("The Seller has locked this deal", "", dealSelection.this);
+                    Displayer.alertDisplayer("The Seller has Locked or Completed this deal", "", dealSelection.this);
                 }else if(type == 1){
                     save();
                     ChatRoomActivity.snapShotdata = data;
