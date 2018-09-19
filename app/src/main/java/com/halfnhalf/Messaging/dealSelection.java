@@ -47,7 +47,6 @@ public class dealSelection extends AppCompatActivity {
     private String [] data;
     private String headerData = "";
     private String footerData = "";
-
     public static View.OnClickListener myOnClickListener;
 
     @Override
@@ -80,11 +79,6 @@ public class dealSelection extends AppCompatActivity {
 
     private void init(){
         int startindex = 8;
-//        if(type == 1){
-//            startindex = 7;
-//        }else{
-//            startindex = 8;
-//        }
         for(int x = 0; x < startindex; x++){
             headerData += data[x] + "#";
         }

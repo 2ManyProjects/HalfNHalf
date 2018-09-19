@@ -83,6 +83,7 @@ public class HomePage extends AppCompatActivity {
 
     EditText editText;
     Button button;
+    //TODO: If there is a Completed Deal in the Buying or SellingData Move the deal over to BuyingHistory (Or selling History) as needed and update the Deal on the Sellers Profile
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

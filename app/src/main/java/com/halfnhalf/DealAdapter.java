@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.NumberPicker;
 import android.widget.TextView;
 
+import com.halfnhalf.Messaging.ChatRoomActivity;
 import com.halfnhalf.Messaging.dealSelection;
 import com.halfnhalf.store.storeDeals;
 
@@ -134,34 +135,35 @@ public class DealAdapter extends RecyclerView.Adapter<DealAdapter.MyViewHolder> 
             }
 
             if(type == 1){
-                selectedVal.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
-                    @Override
-                    public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
-                        deal.setSelectedAmnt(newVal);
-                    }
-                });
-
-                selected.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        deal.setSelected(1);
-                        deal.setSelectedAmnt(0);
-                        selected.hide();
-                        selectedVal.setVisibility(View.VISIBLE);
-                        deselected.show();
-                    }
-                });
-                deselected.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        deal.setSelected(0);
-                        deal.setSelectedAmnt(0);
-                        selectedVal.setVisibility(View.GONE);
-                        Log.e("CURRENTAMNT: ", "" + deal.getCurrentAmnt() );
-                        deselected.hide();
-                        selected.show();
-                    }
-                });
+                if(!ChatRoomActivity.locked) {
+                    selectedVal.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
+                        @Override
+                        public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
+                            deal.setSelectedAmnt(newVal);
+                        }
+                    });
+                    selected.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            deal.setSelected(1);
+                            deal.setSelectedAmnt(0);
+                            selected.hide();
+                            selectedVal.setVisibility(View.VISIBLE);
+                            deselected.show();
+                        }
+                    });
+                    deselected.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            deal.setSelected(0);
+                            deal.setSelectedAmnt(0);
+                            selectedVal.setVisibility(View.GONE);
+                            Log.e("CURRENTAMNT: ", "" + deal.getCurrentAmnt());
+                            deselected.hide();
+                            selected.show();
+                        }
+                    });
+                }
             }
             if(type == 2)
                 selectedVal.setEnabled(false);

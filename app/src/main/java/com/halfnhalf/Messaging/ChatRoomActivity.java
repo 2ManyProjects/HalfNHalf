@@ -302,14 +302,18 @@ public class ChatRoomActivity extends AppCompatActivity {
               return true;
           } else if (item.getItemId() == R.id.completeDeal) {
               if (type == 1) {
-                  if (sellercompleted)
+                  if (sellercompleted) {
                       snapShotdata[0] = "6";
-                  else
+                      completed = true;
+                      invalidateOptionsMenu();
+                  }else
                       snapShotdata[0] = "4";
               } else if (type == 2) {
-                  if (buyercompleted)
+                  if (buyercompleted) {
                       snapShotdata[0] = "6";
-                  else
+                      completed = true;
+                      invalidateOptionsMenu();
+                  }else
                       snapShotdata[0] = "5";
               }
               saveData();
