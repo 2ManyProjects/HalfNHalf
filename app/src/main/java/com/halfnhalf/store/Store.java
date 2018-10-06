@@ -5,12 +5,41 @@ import com.halfnhalf.Deal;
 import java.util.ArrayList;
 
 public class Store {
+
     public ArrayList<Deal> storeDeals = new ArrayList<Deal>();
     private String ID;
     private String name;
     private String address;
+    private String seller = "";
+    private String buyer = "";
+    private int dealProgression;
     private int imageResource;
     private boolean isNew;
+
+    public int getDealProgression() {
+        return dealProgression;
+    }
+
+    public void setDealProgression(int dealProgression) {
+        this.dealProgression = dealProgression;
+    }
+
+
+    public String getSeller() {
+        return seller;
+    }
+
+    public void setSeller(String seller) {
+        this.seller = seller;
+    }
+
+    public String getBuyer() {
+        return buyer;
+    }
+
+    public void setBuyer(String buyer) {
+        this.buyer = buyer;
+    }
 
     public boolean isNew() {
         return isNew;
@@ -34,6 +63,9 @@ public class Store {
     }
     public ArrayList<Deal> getData(){
         return this.storeDeals;
+    }
+    public void setStoreDeals(ArrayList<Deal> storeDeals) {
+        this.storeDeals = storeDeals;
     }
     public Deal getData(int i){
         return this.storeDeals.get(i);
@@ -84,6 +116,10 @@ public class Store {
             temp += storeDeals.get(i).toString();
         }
         return temp;
+    }
+
+    public boolean equals(Store store){
+        return this.buyer.equals(store.getBuyer()) && this.seller.equals(store.getSeller()) && this.ID.equals(store.ID);
     }
 
 

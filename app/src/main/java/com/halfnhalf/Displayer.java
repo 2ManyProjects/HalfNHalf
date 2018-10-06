@@ -3,6 +3,10 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class Displayer {
@@ -26,5 +30,13 @@ public class Displayer {
         if (duration.equals("s")){toastDuration = Toast.LENGTH_SHORT;}
         else{toastDuration = Toast.LENGTH_LONG;}
         Toast.makeText(context ,message,toastDuration).show();
+    }
+
+    public static void setSnackBar(View coordinatorLayout, String snackTitle) {
+        Snackbar snackbar = Snackbar.make(coordinatorLayout, snackTitle, Snackbar.LENGTH_SHORT);
+        snackbar.show();
+        View view = snackbar.getView();
+        TextView txtv = (TextView) view.findViewById(android.support.design.R.id.snackbar_text);
+        txtv.setGravity(Gravity.CENTER_HORIZONTAL);
     }
 }

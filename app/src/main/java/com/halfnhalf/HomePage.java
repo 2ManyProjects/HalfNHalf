@@ -4,10 +4,10 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.app.Activity;
 import android.os.Handler;
+import android.os.Looper;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -19,7 +19,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 
 import com.backendless.Backendless;
 import com.backendless.BackendlessUser;
@@ -39,43 +38,47 @@ import com.halfnhalf.store.storeSummery;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Type;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
 public class HomePage extends AppCompatActivity {
 
-    private FloatingActionButton profile,  messenger, buying, selling;
+    private FloatingActionButton profile,  buying, selling;
 
     private String storeID;
     private String Userlist;
     private String[] UserIDs;
     private ArrayList<String> userProfiles;
-    private ArrayList<String []> userProfilesdata;
+    private ArrayList<Store> userProfilesData;
     private ArrayList<storeSummery> stores;
-    private static String profileData;
-    private static String objectID;
     private File mPath;
     public static String MsgID = "";
-    public static String allMsgs = "";
     public static String sellingMsgs = "";
     public static String buyingMsgs = "";
-    public static ArrayList<ArrayList<Message>> Messages;
     public static ArrayList<ArrayList<Message>> sellingMessages;
     public static ArrayList<ArrayList<Message>> buyingMessages;
 
+    private static ArrayList<String> gsonFiles;
     public static RecyclerView.Adapter Summeryadapter;
     private RecyclerView.LayoutManager SummerylayoutManager;
     private static RecyclerView SummeryrecyclerView;
     public static View.OnClickListener myOnClickListener;
     private boolean firstLaunch = false;
     public static boolean processing = false;
+    private static boolean looping = false;
     private messageListener mMessages;
     private Intent mServiceIntent;
     Context ctx;
@@ -89,6 +92,7 @@ public class HomePage extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         ctx = this;
+        gsonFiles = new ArrayList<String>();
         setContentView(R.layout.activity_home_page);
         mMessages = new messageListener(getCtx());
         mServiceIntent = new Intent(getCtx(), mMessages.getClass());
@@ -97,14 +101,10 @@ public class HomePage extends AppCompatActivity {
         }
         mMessages.setIsloggedIn(true);
         initUI();
-        Messages = new ArrayList<ArrayList<Message>>();
         sellingMessages = new ArrayList<ArrayList<Message>>();
         buyingMessages = new ArrayList<ArrayList<Message>>();
-        Bundle bundle = getIntent().getExtras();
-        profileData = bundle.getString("data");
-        objectID = bundle.getString("objectID");
 
-        MsgID = bundle.getString("Msgs");
+        MsgID = (String) MainLogin.getUser().getProperty("messageID");
         Log.i("Msg ID", "" + MsgID);
         mPath = new File(getFilesDir() + "/messages/");
 
@@ -112,6 +112,9 @@ public class HomePage extends AppCompatActivity {
             firstLaunch = true;
             mPath.mkdirs();
             getMsgs();
+        }
+        if(!new File(getFilesDir() + "/tempData/").exists()){
+            new File(getFilesDir() + "/tempData/").mkdirs();
         }
 
         if(!lastUser()){
@@ -127,16 +130,7 @@ public class HomePage extends AppCompatActivity {
         if(!firstLaunch){
 
             String inputString = "";
-            String path = getFilesDir() + "/messages/" + "allMsgs";
-            try {
-                BufferedReader in = new BufferedReader(new FileReader(path));
-                inputString = in.readLine();
-            } catch (IOException e) {
-
-            }
-            allMsgs = inputString;
-            inputString = "";
-            path = getFilesDir() + "/messages/" + "sellingMsgs";
+            String path = getFilesDir() + "/messages/" + "sellingMsgs";
             try {
                 BufferedReader in = new BufferedReader(new FileReader(path));
                 inputString = in.readLine();
@@ -166,12 +160,6 @@ public class HomePage extends AppCompatActivity {
             }
         });
 
-        messenger.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                getNewMsgs(true, HomePage.this, 0);
-            }
-        });
 
         buying.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -219,6 +207,7 @@ public class HomePage extends AppCompatActivity {
         Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(myToolbar);
 
+        completedDeals();
     }
 
     public Context getCtx() {
@@ -249,6 +238,11 @@ public class HomePage extends AppCompatActivity {
     protected void onPause(){
         super.onPause();
     }
+    @Override
+    protected void onResume() {
+        completedDeals();
+        super.onResume();
+    }
 
     private boolean lastUser(){
         String inputString = "";
@@ -264,16 +258,11 @@ public class HomePage extends AppCompatActivity {
     }
 
     private void getMsgs(){
-        Backendless.Data.of("Messages").findById(MsgID,
+        Backendless.Data.of("Messaging").findById(MsgID,
                 new AsyncCallback<Map>() {
                     @Override
                     public void handleResponse( Map response )
                     {
-                        if(response.get("allMsgs") != null) {
-                            allMsgs = response.get("allMsgs").toString();
-                        }else {
-                            allMsgs = "";
-                        }
                         if(response.get("buyingMsgs") != null) {
                             buyingMsgs = response.get("buyingMsgs").toString();
                         }else {
@@ -307,24 +296,11 @@ public class HomePage extends AppCompatActivity {
         final boolean tolaunch = launch;
         final Context context = c;
         final int t = type;
-        Backendless.Data.of("Messages").findById(MsgID,
+        Backendless.Data.of("Messaging").findById(MsgID,
                 new AsyncCallback<Map>() {
                     @Override
                     public void handleResponse( Map response )
                     {
-                        if(response.get("Received") != null) {
-                            allMsgs += response.get("Received").toString();
-                            String path = context.getFilesDir() + "/messages/" + "allMsgs";
-                            try {
-                                BufferedWriter out = new BufferedWriter(new FileWriter(path));
-                                out.write(allMsgs);
-                                out.close();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                            //                            Log.e("TOTAL MSG", "" +allMsgs);
-                        }
-
                         if(response.get("buyingReceived") != null) {
 
                             if(buyingMsgs == null){
@@ -360,18 +336,12 @@ public class HomePage extends AppCompatActivity {
                             }
 
                         }
-                        if(allMsgs.length() > 6)
-                            response.put("allMsgs", allMsgs);
                         if(sellingMsgs.length() > 6)
                             response.put("sellingMsgs", sellingMsgs);
                         if(buyingMsgs.length() > 6)
                             response.put("buyingMsgs", buyingMsgs);
 
 
-
-                        if(allMsgs != null) {
-                            buildMessages(allMsgs, 0);
-                        }
                         if(buyingMsgs != null) {
                             buildMessages(buyingMsgs, 1);
                         }
@@ -382,15 +352,13 @@ public class HomePage extends AppCompatActivity {
                         response.put("Received", "");
                         response.put("buyingReceived", "");
                         response.put("sellingReceived", "");
-                        Backendless.Persistence.of("Messages").save( response, new AsyncCallback<Map>() {
+                        Backendless.Persistence.of("Messaging").save( response, new AsyncCallback<Map>() {
                             @Override
                             public void handleResponse( Map response )
                             {
                                 processing = false;
                                 if(tolaunch) {
-                                    if(t == 0) {
-                                        launch(2, context);
-                                    }else if(t == 1) {
+                                    if(t == 1) {
                                         launch(3, context);
                                     }else if(t == 2) {
                                         launch(4, context);
@@ -429,9 +397,7 @@ public class HomePage extends AppCompatActivity {
 
     private static void buildMessages(String data, int type){
         if(data.length() > 6) {
-            if (type == 0) {
-                Messages.clear();
-            }else if(type == 1){
+            if(type == 1){
                 buyingMessages.clear();
             }else{
                 sellingMessages.clear();
@@ -447,9 +413,7 @@ public class HomePage extends AppCompatActivity {
                 if (i == 0) {
                     ArrayList<Message> tempMessage = new ArrayList<>();
                     tempMessage.add(temp);
-                    if (type == 0) {
-                        Messages.add(tempMessage);
-                    }else if(type == 1){
+                    if(type == 1){
                         buyingMessages.add(tempMessage);
                     }else{
                         sellingMessages.add(tempMessage);
@@ -458,9 +422,7 @@ public class HomePage extends AppCompatActivity {
                     int index = getIndexofMessage(temp.getData().getSender(), temp.getData().getReceiver(), type);
 //                    Log.i("INDEX: ", "" + index);
                     if (index != -1) {
-                        if (type == 0) {
-                            Messages.get(index).add(temp);
-                        }else if(type == 1){
+                        if(type == 1){
                             buyingMessages.get(index).add(temp);
                         }else{
                             sellingMessages.get(index).add(temp);
@@ -468,9 +430,7 @@ public class HomePage extends AppCompatActivity {
                     } else {
                         ArrayList<Message> tempMessage = new ArrayList<>();
                         tempMessage.add(temp);
-                        if (type == 0) {
-                            Messages.add(tempMessage);
-                        }else if(type == 1){
+                        if(type == 1){
                             buyingMessages.add(tempMessage);
                         }else{
                             sellingMessages.add(tempMessage);
@@ -488,19 +448,14 @@ public class HomePage extends AppCompatActivity {
         String name = Backendless.UserService.CurrentUser().getProperty("name").toString();
 //        Log.i(Messages.size() + " Name:" + name, "Sender: " + sender + " Receiver: " + receiver);
         int size = 0;
-        if (type == 0) {
-            size = Messages.size();
-        }else if(type == 1){
+        if(type == 1){
             size = buyingMessages.size();
         }else{
             size = sellingMessages.size();
         }
         if(sender.equals(name)){
             for(int i = 0; i < size; i++){
-                if(type == 0){
-                    if (Messages.get(i).get(0).getData().getReceiver().equals(receiver) || Messages.get(i).get(0).getData().getSender().equals(receiver))
-                        return i;
-                }else if(type == 1){
+                if(type == 1){
                     if (buyingMessages.get(i).get(0).getData().getReceiver().equals(receiver) || buyingMessages.get(i).get(0).getData().getSender().equals(receiver))
                         return i;
                 }else{
@@ -510,10 +465,7 @@ public class HomePage extends AppCompatActivity {
             }
         }else{
             for(int i = 0; i < size; i++){
-                if(type == 0) {
-                    if (Messages.get(i).get(0).getData().getSender().equals(sender) || Messages.get(i).get(0).getData().getReceiver().equals(sender))
-                        return i;
-                }if(type == 1){
+                if(type == 1){
                     if (buyingMessages.get(i).get(0).getData().getSender().equals(sender) || buyingMessages.get(i).get(0).getData().getReceiver().equals(sender))
                         return i;
                 }else{
@@ -530,15 +482,9 @@ public class HomePage extends AppCompatActivity {
         switch (x){
             case 1:
                 intent = new Intent(c, Profile.class);
-                intent.putExtra("String", profileData);
-                intent.putExtra("objectID", objectID);
                 c.startActivity(intent);
                 break;
             case 2:
-                intent = new Intent(c, StartChatActivity.class);
-                intent.putExtra("type", 0);
-                intent.putExtra("msgID", MsgID);
-                c.startActivity(intent);
                 break;
             case 3:
                 intent = new Intent(c, StartChatActivity.class);
@@ -560,7 +506,6 @@ public class HomePage extends AppCompatActivity {
 
     private void initUI() {
         profile = (FloatingActionButton) findViewById(R.id.fab_profileBtn);
-        messenger = (FloatingActionButton) findViewById(R.id.fab_Msg);
         buying = (FloatingActionButton) findViewById(R.id.fab_buy);
         selling = (FloatingActionButton) findViewById(R.id.fab_sell);
     }
@@ -592,9 +537,7 @@ public class HomePage extends AppCompatActivity {
                 Bundle bundle = data.getExtras();
                 storeID = bundle.getString("StoreID");
                 userProfiles = new ArrayList<>();
-                userProfilesdata = new ArrayList<>();
                 userProfiles.clear();
-                userProfilesdata.clear();
                 stores.clear();
                 Summeryadapter.notifyDataSetChanged();
                 findData(storeID);
@@ -613,7 +556,7 @@ public class HomePage extends AppCompatActivity {
                         if (foundUsers.size() >= 0) {
                             Userlist = foundUsers.get(0).get("UserList").toString();
                             UserIDs = Userlist.split("#");
-                            startTimer(UserIDs, 0);
+                            getUserProfiles(UserIDs, 0);
                         }
                     }
 
@@ -624,23 +567,168 @@ public class HomePage extends AppCompatActivity {
                 });
     }
 
-    private void startTimer(String [] id, int x){
+    public void downloadFile( String path, int i){
+        final String p = path;
+        final int index = i;
+        looping = true;
+        new Thread(new Runnable() {
+            public void run() {
+                URL url = null;
+                try {
+                    url = new URL(p);
+                    String tempData = HomePage.this.getFilesDir() + "/tempData/" + "Gson.txt";
+                    downloadFromUrl(url, tempData, index);
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+    private void downloadFromUrl(URL url, String localFilename, int i) throws IOException {
+        InputStream is = null;
+        FileOutputStream fos = null;
+
+        try {
+            URLConnection urlConn = url.openConnection();//connect
+
+            is = urlConn.getInputStream();               //get connection inputstream
+            fos = new FileOutputStream(localFilename);   //open outputstream to local file
+
+            byte[] buffer = new byte[4096];              //declare 4KB buffer
+            int len;
+
+            //while we have availble data, continue downloading and storing to local file
+            while ((len = is.read(buffer)) > 0) {
+                fos.write(buffer, 0, len);
+            }
+            BufferedReader in = new BufferedReader(new FileReader(localFilename));
+            String data = in.readLine();
+            Gson gson = new Gson();
+            Type type = new TypeToken<ArrayList<Store>>(){}.getType();
+            ArrayList<Store> temp = gson.fromJson(data, type);
+            File file = new File(localFilename);
+            file.delete();
+            fos.close();
+            is.close();
+            in.close();
+            for(int x = 0; x < temp.size(); x++)
+            {
+                if(temp.get(i).getID().equals(storeID)) {
+                    userProfilesData.add(temp.get(i));
+                    break;
+                }
+            }
+            looping = false;
+        } finally {
+            try {
+                if (is != null) {
+                    is.close();
+                }
+            } finally {
+                if (fos != null) {
+                    fos.close();
+                }
+            }
+        }
+    }
+
+    private void startTimer(int type, int iterator){
+        final int t = type;
+        final int i = iterator;
+        if(looping) {
+            if (Looper.myLooper() == null){
+                Looper.prepare();
+            }
+            new Handler().postDelayed(new Runnable() {
+
+                @Override
+                public void run() {
+                    startTimer(t, i);
+                }
+            }, MainLogin.DELAY_TIME);
+        }else{
+            if(t == 1 && iterator < gsonFiles.size()) {
+                downloadFile(gsonFiles.get(i), i);
+                startTimer(t, i+1);
+            }else{
+                for(int v = 0; v < userProfilesData.size(); v++) {
+                    Log.i("[" + v + "]", " " + userProfilesData.get(v).toString());
+                    for(int ind = 0; ind < userProfilesData.get(v).getData().size(); ind++){
+                        userProfilesData.get(v).getData().get(ind).setSelectedAmnt(0);
+                        userProfilesData.get(v).getData().get(ind).setSelected(0);
+                        userProfilesData.get(v).setBuyer(MainLogin.getUser().getProperty("name").toString());
+                        userProfilesData.get(v).setDealProgression(0);
+                    }
+                    for(int index = 0; index < userProfilesData.size(); index++){
+                        Log.i("ProfileData", "" + userProfilesData.get(index).toString());
+                    }
+                    for(int f = 0; f < userProfilesData.size(); f++) {
+
+                        Store tempStore = userProfilesData.get(f);
+                        tempStore.setBuyer(MainLogin.getUser().getProperty("name").toString());
+
+                        storeSummery temp = new storeSummery(tempStore.getSeller(), tempStore.getName(), tempStore.getAddress());
+                        temp.setStore(tempStore);
+
+                        String storeGson = new Gson().toJson(tempStore).toString();
+                        ArrayList<skewedDeals> deals = new ArrayList<>();
+                        for (int d = 0; d < userProfilesData.get(f).getData().size(); d++){
+                            skewedDeals tempDeal = new skewedDeals(Integer.parseInt(userProfilesData.get(f).getData().get(d).getRate()), userProfilesData.get(f).getData().get(d).getAtCost());
+                            deals.add(tempDeal);
+                        }
+                        Collections.sort(deals, new Comparator<skewedDeals>() {
+                            @Override
+                            public int compare(skewedDeals o1, skewedDeals o2) {
+                                return o1.compareTo(o2);
+                            }
+                        });
+                        Collections.reverse(deals);
+                        int size = 3;
+                        if (deals.size() < 3)
+                            size = deals.size();
+                        for (int h = 0; h < size; h++) {
+                            temp.addDeal((deals.get(h).toString()), (deals.get(h).getAtCost()));
+                        }
+                        stores.add(temp);
+                        stores.get(f).setsnapshotGson(storeGson);
+                        Summeryadapter.notifyItemInserted(stores.size());
+                    }
+                }
+            }
+        }
+    }
+
+    private void getUserProfiles(String [] id, int x){
+        processing = true;
         final String [] userID = id;
         final int i = x;
+        if(x == 0 && userProfilesData != null)
+            userProfilesData.clear();
+        if(userProfilesData == null)
+            userProfilesData = new ArrayList<Store>();
         if(x < id.length) {
             new Handler().postDelayed(new Runnable() {
                 int y = i;
                 @Override
                 public void run() {
+                    boolean found = false;
                     final String ID = userID[y];
                     if(!ID.equals(Backendless.UserService.CurrentUser().getUserId())) {
                         Backendless.Data.of(BackendlessUser.class).findById(ID,
                                 new AsyncCallback<BackendlessUser>() {
                                     @Override
                                     public void handleResponse(BackendlessUser foundUser) {
+                                        //if(foundUser.getProperty("profile") != null)
+                                        gsonFiles.add(foundUser.getProperty("profile").toString());
+                                        for(int i = 0; i < gsonFiles.size(); i++){
+                                            Log.i("Gson[" + i + "]", " " + gsonFiles.get(i));
+                                        }
+                                        //downloadFile(foundUser.getProperty("profile").toString(), 1, userID, y);
                                         userProfiles.add(foundUser.getProperty("profileData").toString());
                                         y++;
-                                        startTimer(userID, y);
+                                        getUserProfiles(userID, y);
                                     }
 
                                     @Override
@@ -650,110 +738,112 @@ public class HomePage extends AppCompatActivity {
                                 });
                     }else {
                         y++;
-                        startTimer(userID, y);
+                        getUserProfiles(userID, y);
                     }
                 }
             }, MainLogin.DELAY_TIME);
         }else{
-            for(int f = 0; f < userProfiles.size(); f++) {
-                userProfilesdata.add(userProfiles.get(f).split("#"));
-                int startindex = findIndex(userProfilesdata.get(f), storeID);
-                if (startindex == -1) {
-                    Log.e("STORE WAS NOT FOUND IN PROFILE", "PROFILE ERROR  ");
-                    break;
-                }
-                Store tempStore = makeFirstStore(userProfilesdata.get(f), startindex);
-//                if (Integer.parseInt(userProfilesdata.get(f)[startindex+3]) > 0) {
-                    String snapShot = "0" + "#"
-                            + Backendless.UserService.CurrentUser().getProperty("name") + "#"
-                            + userProfilesdata.get(f)[0] + "#"
-                            + userProfilesdata.get(f)[startindex] + "#"
-                            + userProfilesdata.get(f)[startindex + 1] + "#"
-                            + userProfilesdata.get(f)[startindex + 2] + "#"
-                            + userProfilesdata.get(f)[startindex + 3] + "#";
-                    int snapShotCounter = startindex + 4;
-                    for(int v = 0; v < Integer.parseInt(userProfilesdata.get(f)[startindex + 3]); v++){
-                        snapShot += userProfilesdata.get(f)[snapShotCounter] + "#";     // rate
-                        snapShot += userProfilesdata.get(f)[snapShotCounter + 1] + "#"; // Constraint
-                        snapShot += userProfilesdata.get(f)[snapShotCounter + 2] + "#"; // TotalAmnt
-                        snapShot += userProfilesdata.get(f)[snapShotCounter + 3] + "#"; // CurrentAmnt
-                        snapShot += "0" + "#";                                          // SelectedAmnt
-                        snapShot += userProfilesdata.get(f)[snapShotCounter + 4] + "#"; // AtCost
-                        snapShot += userProfilesdata.get(f)[snapShotCounter + 5] + "#"; // Reoccuring
-                        snapShot += userProfilesdata.get(f)[snapShotCounter + 6] + "#"; // Period
-                        snapShot += userProfilesdata.get(f)[snapShotCounter + 7] + "#"; // Reoccure Date
-                        snapShot += "0" + "#";                                          // Deal Selector
-                        snapShotCounter += 8;
-                    }
-                    Calendar getDat = Calendar.getInstance();
-                    snapShot += Integer.toString(getDat.get(Calendar.YEAR))
-                            + "~" + Integer.toString(getDat.get(Calendar.MONTH))
-                            + "~" + Integer.toString(getDat.get(Calendar.DAY_OF_MONTH)) + "#";
-                    int snapLength = snapShot.length();
-                    String snaplen = Integer.toString(snapLength + Integer.toString(snapLength).length() + 1) + "#";
-                    int startIndex = 2
-                            + new String(Backendless.UserService.CurrentUser().getProperty("name") + "#").length()
-                            + new String(userProfilesdata.get(f)[0] + "#").length();
-                    snapShot = snapShot.substring(0, startIndex) + snaplen + snapShot.substring(startIndex);
-                    storeSummery temp = new storeSummery(userProfilesdata.get(f)[0], userProfilesdata.get(f)[startindex + 1], remakeString(userProfilesdata.get(f)[startindex + 2]));
-                    temp.setStore(tempStore);
-                    temp.setProfSnapshot(snapShot);
-                    Log.e("PROFILE SNAPSHOT" , " " + temp.getProfSnapshot());
-                    int baseval = startindex + 4;//get to the first %
-                    List deals = new ArrayList();
-                    for (int d = 0; d < Integer.parseInt(userProfilesdata.get(f)[startindex + 3]); d++){
-                        deals.add(Integer.parseInt(userProfilesdata.get(f)[baseval]));
-                        baseval += 8;
-                    }
-                    Collections.sort(deals);
-                    Collections.reverse(deals);
-                    int size = 3;
-                    if (deals.size() < 3)
-                        size = deals.size();
-                    for (int h = 0; h < size; h++) {
-                        temp.addDeal((deals.get(h).toString()));
-                    }
-                    stores.add(temp);
-                    Summeryadapter.notifyItemInserted(stores.size());
-//                }else if (userProfiles.size() == 1){
-//                    Log.e("Profile Display error", "Profile Has no available deals");
-//                    Displayer.toaster("The only profile has no available deals", "l", this);
-//                }
-            }
+            startTimer(1, 0);
         }
-    }
-
-    private Store makeFirstStore(String [] arrayData, int i){
-        Store temp = new Store(arrayData[i], arrayData[i+1], remakeString(arrayData[i+2]));
-        temp.setNew(false);
-        if(Integer.parseInt(arrayData[i+3]) != 0){
-            for (int x = i + 4; x < (i + 4) + Integer.parseInt(arrayData[i + 3]) * 8; x++) {
-                temp.addDeal(arrayData[x],
-                        remakeString(arrayData[x + 1]),
-                        arrayData[x + 2],
-                        arrayData[x + 3],
-                        Boolean.parseBoolean(arrayData[x + 4]),
-                        Boolean.parseBoolean(arrayData[x + 5]),
-                        arrayData[x + 6],
-                        arrayData[x + 7]);
-                x += 7;
-            }
-        }
-
-        return temp;
     }
 
     private String remakeString(String str){
         return str.replaceAll("~@", "#");
     }
 
-    private int findIndex(String [] str, String token){
-        for(int i = 0; i < str.length; i++){
-            if(str[i].equals(token)){
-                return i;
+    public void completedDeals(){//TODO fix this to work with Gson Files
+        Backendless.Data.of("Messaging").findById(MsgID, new AsyncCallback<Map>() {
+            @Override
+            public void handleResponse(Map response) {
+                String buyingData = "";
+                String sellingData = "";
+                int changed = 0;
+                if(response.get("buyingData") != null) {
+                    if(buyingData.length() > 5){
+                        Log.e("BUYINGDAT ", " STARTED");
+                        if(buyingData.contains("6#" + Backendless.UserService.CurrentUser().getProperty("name").toString() + "#")) {
+                            String[] data = buyingData.split("#");
+                            String index = getnewIndex(data,  Backendless.UserService.CurrentUser().getProperty("name").toString(), 0);
+                            if(!index.equals("-1")){
+                                int [] indexData = { Integer.parseInt(index.split("#")[0]) ,Integer.parseInt(index.split("#")[1]) };
+                                int length = Integer.parseInt(data[indexData[0] + 3]);
+                                int startLength = indexData[1];
+                                String dataToMove = buyingData.substring(startLength, length + startLength);
+                                buyingData = buyingData.replace(dataToMove, "");
+                                if(response.get("buyingHistory") != null)
+                                    if(response.get("buyingHistory").toString().length() > 5)
+                                        dataToMove = response.get("buyingHistory").toString() + dataToMove;
+                                response.put("buyingData", buyingData);
+                                response.put("buyingHistory", dataToMove);
+                                changed = 1;
+                            }
+                        }
+                    }
+                }
+                if(response.get("sellingData") != null) {
+                    if(sellingData.length() > 5){
+                        if(sellingData.contains("6#")) {
+                            String[] data = sellingData.split("#");
+                            String index = getnewIndex(data,  Backendless.UserService.CurrentUser().getProperty("name").toString(), 1);
+                            if(!index.equals("-1")){
+                                int [] indexData = { Integer.parseInt(index.split("#")[0]) ,Integer.parseInt(index.split("#")[1]) };
+                                int length = Integer.parseInt(data[indexData[0] + 3]);
+                                int startLength = indexData[1];
+                                String dataToMove = sellingData.substring(startLength, length + startLength);
+                                sellingData = sellingData.replace(dataToMove, "");
+                                if(response.get("sellingHistory") != null)
+                                    if(response.get("sellingHistory").toString().length() > 5)
+                                        dataToMove = response.get("sellingHistory").toString() + dataToMove;
+                                response.put("sellingData", sellingData);
+                                response.put("sellingHistory", dataToMove);
+                                changed = 2;
+                            }
+                        }
+                    }
+                }
+
+                if(changed > 0){
+                    processing = true;
+                    Backendless.Data.of("Messaging").save(response, new AsyncCallback<Map>() {
+                        @Override
+                        public void handleResponse(Map response) {
+                            processing = false;
+                            completedDeals();
+                        }
+
+                        @Override
+                        public void handleFault(BackendlessFault fault) {
+                            processing = false;
+                        }
+                    });
+                }
             }
+
+            @Override
+            public void handleFault(BackendlessFault fault) {
+
+            }
+        });
+    }
+
+    private String getnewIndex(String [] data, String compare, int type){
+        int length = 0;
+        int typeLength = 1;
+        if(type == 0)
+            typeLength = 1;
+        else if(type == 1)
+            typeLength = 2;
+
+        for (int i = 0; i < data.length; i++) {
+            if (data[i].equals("6") && i + 2 < data.length) {
+                Log.e("INDEX TESTING", " Name: " + data[i + typeLength] + " Name: " + compare );
+                if (data[i + typeLength].equals(compare)) {
+                    return Integer.toString(i) + "#" + Integer.toString(length);
+                }
+            }
+            length+= data[i].length() + 1;
         }
-        return -1;
+        return "-1";
     }
 
     @Override
@@ -798,5 +888,35 @@ public class HomePage extends AppCompatActivity {
             intent.putExtra("type", 2);
             startActivity(intent);
         }
+    }
+}
+class skewedDeals implements Comparable<skewedDeals>{
+    int value = 0;
+    boolean atCost = false;
+    public skewedDeals(int val, boolean atCost){
+        this.value = val;
+        this.atCost = atCost;
+    }
+
+    public boolean getAtCost(){
+        return atCost;
+    }
+
+    public int getValue() {
+        return value;
+    }
+
+    @Override
+    public int compareTo(@NonNull skewedDeals o) {
+        if(o.getValue() == value)
+            return 0;
+        else if(value > o.getValue())
+            return 1;
+        else
+            return -1;
+    }
+    @Override
+    public String toString(){
+        return Integer.toString(value);
     }
 }

@@ -87,9 +87,21 @@ public class DealAdapter extends RecyclerView.Adapter<DealAdapter.MyViewHolder> 
 
         void bindTo(Deal currentDeal){
             final Deal deal = currentDeal;
+            double fvalue = 0.0f;
+            if(deal.getAtCost()) {
+                if(Integer.parseInt(deal.getRate()) < 20)
+                    fvalue = Math.round((Double.parseDouble(deal.getRate()) * 1.50f) * 100.0) / 100.0;
+                else
+                    fvalue = Math.round((Double.parseDouble(deal.getRate()) * 1.20f) * 100.0) / 100.0;
+            }else {
+                fvalue = Math.round((Double.parseDouble(deal.getRate()) * 0.90f) * 100.0) / 100.0;
+            }
             //Populate the textviews with data
             mWarning.setText(deal.getText());
-            mRate.setText(deal.getRate() + "%");
+            if(type == 1)
+                mRate.setText(fvalue + "%");
+            else
+                mRate.setText(deal.getRate() + "%" + "Buying @ " + fvalue + "%");
             mAmnt.setText(deal.getTotalAmnt());
             selected.hide();
             deselected.hide();

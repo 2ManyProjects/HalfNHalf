@@ -32,6 +32,8 @@ public class MainLogin extends Activity {
     private boolean isLoggedInBackendless = false;
     private CheckBox rememberLoginBox;
     public static final int DELAY_TIME = 50;
+    private static BackendlessUser mainUser;
+    public static boolean processing = false;
 
     // backendless
     private TextView registerLink, restoreLink;
@@ -41,6 +43,8 @@ public class MainLogin extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mainUser = null;
+        processing = false;
         setContentView(R.layout.activity_main_login);
 
         Backendless.initApp( this, getString(R.string.backendless_AppId), getString(R.string.backendless_ApiKey));
@@ -117,14 +121,12 @@ public class MainLogin extends Activity {
     }
 
     private void startHomePage(BackendlessUser user) {
-        String userStoreData = (String) user.getProperty("profileData");
-        String messageAddress = (String) user.getProperty("messageID");
-
+        mainUser = user;
 
         Intent intent = new Intent(this, HomePage.class);
         intent.putExtra("objectID", user.getObjectId());
-        intent.putExtra("data", userStoreData);
-        intent.putExtra("Msgs", messageAddress);
+        intent.putExtra("data", (String) user.getProperty("profileData"));
+        intent.putExtra("Msgs", (String) user.getProperty("messageID"));
         startActivity(intent);
     }
 
@@ -156,6 +158,26 @@ public class MainLogin extends Activity {
                 retry();
             }
         }, rememberLogin );
+    }
+
+    public static BackendlessUser getUser(){
+        return mainUser;
+    }
+
+    public static void reloadUserData(){
+        processing = true;
+        Backendless.Data.of(BackendlessUser.class).findById(mainUser.getObjectId(), new AsyncCallback<BackendlessUser>() {
+            @Override
+            public void handleResponse(BackendlessUser response) {
+                mainUser = response;
+                processing = false;
+            }
+
+            @Override
+            public void handleFault(BackendlessFault fault) {
+                processing = false;
+            }
+        });
     }
 
     private void onRegisterLinkClicked(){

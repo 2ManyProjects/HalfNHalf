@@ -20,18 +20,33 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.backendless.Backendless;
+import com.backendless.BackendlessUser;
 import com.backendless.async.callback.AsyncCallback;
 import com.backendless.exceptions.BackendlessFault;
+import com.backendless.files.BackendlessFile;
 import com.backendless.persistence.DataQueryBuilder;
 import com.backendless.rt.messaging.Channel;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.halfnhalf.Displayer;
 import com.halfnhalf.HomePage;
 import com.halfnhalf.MainLogin;
 import com.halfnhalf.R;
+import com.halfnhalf.store.Store;
+import com.halfnhalf.store.storeSummery;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Type;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -54,19 +69,21 @@ public class ChatRoomActivity extends AppCompatActivity {
   private boolean firstContact = false;
   public static boolean locked = true;
   public static boolean processing = false;
-  private static String OGsnapShot = "";
-  private static String snapShot = "";
   private static boolean completed = false;
   private static boolean sellercompleted = false;
   private static boolean buyercompleted = false;
-  public static String [] snapShotdata;
+  private static String seller, buyer;
+  private static String sellerlink, buyerlink, selleruploadlink, buyeruploadlink;
+  public static Store dealGson;
+  public static ArrayList<Store> buyerGson, sellerGson;
+  //TODO update the Gson Files with changed deals, and Migrate the base data from snapshot to Gson
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_chat_room);
-    snapShot = "";
-    OGsnapShot = "";
-//    snapShotdata = new String [snapShotdata.length];
+    buyerGson = new ArrayList<Store>();
+    sellerGson = new ArrayList<Store>();
+    dealGson = null;
     locked = true;
     processing = false;
     type = 0;
@@ -82,22 +99,24 @@ public class ChatRoomActivity extends AppCompatActivity {
     Bundle bundle = getIntent().getExtras();
     type = bundle.getInt("type");
     index = bundle.getInt("index");
+      name = bundle.getString("name");
+      receiving = bundle.getString("othername");
+      MsgID = HomePage.MsgID;
 
     if(type == 100) { //First Contact
         type = 1;
         firstContact = true;
     }
-      if(type == 0) {
-          msgs = HomePage.Messages.get(index);
-      }else if(type == 1) {
+      if(type == 1) {
           msgs = HomePage.buyingMessages.get(index);
+          buyer = MainLogin.getUser().getProperty("name").toString();
+          seller = receiving;
       }else if(type == 2) {
           msgs = HomePage.sellingMessages.get(index);
+          seller = MainLogin.getUser().getProperty("name").toString();
+          buyer = receiving;
       }
-
-    name = bundle.getString("name");
-    receiving = bundle.getString("othername");
-    MsgID = HomePage.MsgID;
+      getLinks();
 
     messageAdapter = new MessageAdapter(this);
     messagesView = (ListView) findViewById(R.id.messages_view);
@@ -278,13 +297,14 @@ public class ChatRoomActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
       if(!completed) {
           if (item.getItemId() == R.id.lock) {
-              snapShotdata[0] = "1";
+//              snapShotdata[0] = "1";
+              dealGson.setDealProgression(1);
               locked = true;
               saveData();
               startTimer(1);
               return true;
           } else if (item.getItemId() == R.id.unlock) {
-              snapShotdata[0] = "0";
+              dealGson.setDealProgression(0);
               locked = false;
               saveData();
               startTimer(2);
@@ -303,37 +323,59 @@ public class ChatRoomActivity extends AppCompatActivity {
           } else if (item.getItemId() == R.id.completeDeal) {
               if (type == 1) {
                   if (sellercompleted) {
-                      snapShotdata[0] = "6";
+                      dealGson.setDealProgression(6);
                       completed = true;
                       invalidateOptionsMenu();
-                  }else
-                      snapShotdata[0] = "4";
+                  }else {
+                      dealGson.setDealProgression(4);
+                  }
               } else if (type == 2) {
                   if (buyercompleted) {
-                      snapShotdata[0] = "6";
-                      completed = true;
+                      dealGson.setDealProgression(6);
+                      completed = false;
                       invalidateOptionsMenu();
-                  }else
-                      snapShotdata[0] = "5";
+                  }else {
+                      dealGson.setDealProgression(5);
+                  }
               }
               saveData();
               startTimer(4);
               return true;
           } else if (item.getItemId() == R.id.undoCompletion) {
               if (type == 1) {
-                  if (sellercompleted)
-                      snapShotdata[0] = "5";
-                  else if (locked)
-                      snapShotdata[0] = "1";
-                  else
-                      snapShotdata[0] = "0";
+                  if (sellercompleted) {
+                      dealGson.setDealProgression(5);
+                      completed = false;
+                      buyercompleted = false;
+                      invalidateOptionsMenu();
+                  }else if (locked) {
+                      dealGson.setDealProgression(1);
+                      completed = false;
+                      buyercompleted = false;
+                      invalidateOptionsMenu();
+                  }else {
+                      dealGson.setDealProgression(0);
+                      completed = false;
+                      buyercompleted = false;
+                      invalidateOptionsMenu();
+                  }
               } else if (type == 2) {
-                  if (buyercompleted)
-                      snapShotdata[0] = "4";
-                  else if (locked)
-                      snapShotdata[0] = "1";
-                  else
-                      snapShotdata[0] = "0";
+                  if (buyercompleted) {
+                      dealGson.setDealProgression(4);
+                      completed = false;
+                      sellercompleted = false;
+                      invalidateOptionsMenu();
+                  }else if (locked) {
+                      dealGson.setDealProgression(1);
+                      completed = false;
+                      sellercompleted = false;
+                      invalidateOptionsMenu();
+                  }else {
+                      dealGson.setDealProgression(0);
+                      completed = false;
+                      sellercompleted = false;
+                      invalidateOptionsMenu();
+                  }
               }
               saveData();
               startTimer(5);
@@ -367,6 +409,102 @@ public class ChatRoomActivity extends AppCompatActivity {
         }
     }
 
+    private static void downloadFile(String path, int type, Context c){
+        final Context mContext = c;
+        final String p = path;
+        final int t = type;
+        new Thread(new Runnable() {
+            public void run() {
+                URL url = null;
+                try {
+                    url = new URL(p);
+                    String tempData = mContext.getFilesDir() + "/tempData/" + "ChatGson.txt";
+                    downloadFromUrl(url, tempData, t, mContext);
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+    private static void downloadFromUrl(URL url, String localFilename, int t, Context c) throws IOException {
+        InputStream is = null;
+        FileOutputStream fos = null;
+
+        try {
+            URLConnection urlConn = url.openConnection();//connect
+
+            is = urlConn.getInputStream();               //get connection inputstream
+            fos = new FileOutputStream(localFilename);   //open outputstream to local file
+
+            byte[] buffer = new byte[4096];              //declare 4KB buffer
+            int len;
+
+            //while we have availble data, continue downloading and storing to local file
+            while ((len = is.read(buffer)) > 0) {
+                fos.write(buffer, 0, len);
+            }
+            BufferedReader in = new BufferedReader(new FileReader(localFilename));
+            String data = in.readLine();
+            Gson gson = new Gson();
+            Type type = new TypeToken<ArrayList<Store>>(){}.getType();
+            ArrayList<Store> temp = gson.fromJson(data, type);
+            File file = new File(localFilename);
+            file.delete();
+            fos.close();
+            is.close();
+            in.close();
+            if(t == 1) {
+                for (int i = 0; i < temp.size(); i++) {
+                    if (temp.get(i).getSeller().equals(seller) &&
+                            temp.get(i).getBuyer().equals(buyer) &&
+                            temp.get(i).getDealProgression() != 6) {
+                        dealGson = temp.get(i);
+                        break;
+                    }
+                }
+                locked = (dealGson.getDealProgression() == 1);
+                buyercompleted = (dealGson.getDealProgression() == 4);
+                sellercompleted = (dealGson.getDealProgression() == 5);
+                completed = (dealGson.getDealProgression() == 6);
+                if(completed)
+                    Displayer.alertDisplayer("THIS DEAL IS COMPLETE", "Please start a new one", c);
+
+                processing = false;
+            }else if(t == 2){
+                sellerGson = temp;
+                for(int i = 0; i < sellerGson.size(); i++){
+                    if(sellerGson.get(i).equals(dealGson)) {
+                        sellerGson.set(i, dealGson);
+                        break;
+                    }
+                }
+                processing = true;
+                downloadFile(buyerlink, 3, c);
+            }else if(t == 3){
+                buyerGson = temp;
+                for(int i = 0; i < buyerGson.size(); i++){
+                    if(buyerGson.get(i).equals(dealGson)) {
+                        buyerGson.set(i, dealGson);
+                        break;
+                    }
+                }
+                processing = false;
+            }
+        } finally {
+            try {
+                if (is != null) {
+                    is.close();
+                }
+            } finally {
+                if (fos != null) {
+                    fos.close();
+                }
+            }
+        }
+    }
+
 
     private void startTimer(int x){
       final int y = x;
@@ -385,26 +523,33 @@ public class ChatRoomActivity extends AppCompatActivity {
                     setSupportActionBar(myToolbar);
                     invalidateOptionsMenu();
                 } else if (y == 1) {
+                    Displayer.setSnackBar(findViewById(R.id.messages_view), "You've locked this Deal");
                     invalidateOptionsMenu();
                     message.setText("[SYSTEM MESSAGE] " + name + " has locked the deal");
                     sendMessage();
                 } else if (y == 2) {
+                    Displayer.setSnackBar(findViewById(R.id.messages_view), "You've unlocked this Deal");
                     invalidateOptionsMenu();
                     message.setText("[SYSTEM MESSAGE] " + name + " has unlocked the deal");
                     sendMessage();
                 } else if (y == 3) {
+                    Displayer.setSnackBar(findViewById(R.id.messages_view), "You've modified this Deal");
                     invalidateOptionsMenu();
                     message.setText("[SYSTEM MESSAGE] " + name + " has modified the deal");
                     sendMessage();
                 } else if (y == 4) {
+                    Displayer.setSnackBar(findViewById(R.id.messages_view), "You've Completed this Deal");
                     invalidateOptionsMenu();
                     message.setText("[SYSTEM MESSAGE] " + name + " has Completed the deal");
                     sendMessage();
                 } else if (y == 5) {
+                    Displayer.setSnackBar(findViewById(R.id.messages_view), "You've undone your Completion");
                     invalidateOptionsMenu();
                     message.setText("[SYSTEM MESSAGE] " + name + " has Undone their Completion");
                     sendMessage();
-                } else {
+                } else if (y == 6) {
+                    saveGson();
+                }else {
                     invalidateOptionsMenu();
                 }
             }
@@ -462,9 +607,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                 }
             }, MainLogin.DELAY_TIME);
         }else{
-            if(type == 0) {
-                msgs = HomePage.Messages.get(index);
-            }else if(type == 1) {
+            if(type == 1) {
                 msgs = HomePage.buyingMessages.get(index);
             }else if(type == 2) {
                 msgs = HomePage.sellingMessages.get(index);
@@ -483,35 +626,13 @@ public class ChatRoomActivity extends AppCompatActivity {
 
         DataQueryBuilder dataQuery = DataQueryBuilder.create();
         dataQuery.setWhereClause(WhereClause);
-        Backendless.Data.of("Messages").find(dataQuery,
+        Backendless.Data.of("Messaging").find(dataQuery,
                 new AsyncCallback<List<Map>>() {
                     @Override
                     public void handleResponse(List<Map> foundUsers) {
                         if (foundUsers.size() >= 0) {
-                            if (foundUsers.get(0).get("sellingData") != null) {
-                                snapShot = trim(foundUsers.get(0).get("sellingData").toString());
-                                OGsnapShot = snapShot;
-                                snapShotdata = snapShot.split("#");
-                                if(!snapShotdata[0].equals("0")) {
-                                    locked = true;
-                                }else{
-                                    locked = false;
-                                }
-                                if(snapShotdata[0].equals("4")){
-                                    buyercompleted = true;
-                                }else if(snapShotdata[0].equals("5")){
-                                    sellercompleted = true;
-                                }else if(snapShotdata[0].equals("6")){
-                                    completed = true;
-                                }
-                                Log.i("SNAPSHOT", snapShot + "");
-                                if(completed)
-                                    Displayer.alertDisplayer("THIS DEAL IS COMPLETE", "Please start a new one", mContext);
-                                //Trim it down
-                                processing = false;
-                            } else {
-                                Displayer.alertDisplayer("Error retreiving seller Profile: ", "Please Reload Chat", mContext);
-                            }
+                            String gsonPath = foundUsers.get(0).get("sellingDataGson").toString();
+                            downloadFile(gsonPath, 1, mContext);
                         }
                     }
                     @Override
@@ -521,41 +642,6 @@ public class ChatRoomActivity extends AppCompatActivity {
                     }
                 });
 
-    }
-
-    private static String trim(String str){
-        int startIndex;
-        String buyer;
-        String seller;
-        Log.e("VALUE: ", "" + str);
-        if(type == 1){
-            buyer = name;
-            seller = receiving;
-        }else{
-            buyer = receiving;
-            seller = name;
-        }
-        if(str.contains("0" + "#" + buyer + "#" + seller + "#")) {
-            startIndex = str.indexOf("0" + "#" + buyer + "#" + seller + "#");
-        }else if(str.contains("4" + "#" + buyer + "#" + seller + "#")) {
-            startIndex = str.indexOf("4" + "#" + buyer + "#" + seller + "#");
-        }else if(str.contains("5" + "#" + buyer + "#" + seller + "#")) {
-            startIndex = str.indexOf("5" + "#" + buyer + "#" + seller + "#");
-        }else if(str.contains("6" + "#" + buyer + "#" + seller + "#")) {
-            startIndex = str.indexOf("6" + "#" + buyer + "#" + seller + "#");
-        }else{
-            startIndex = str.indexOf("1" + "#" + buyer + "#" + seller + "#");
-        }
-        String lengthval = str.substring(startIndex + new String("0" + "#" + buyer + "#" + seller + "#").length());
-        Log.e("LENGTH: ", "" + lengthval);
-        lengthval = lengthval.substring(0, lengthval.indexOf("#"));
-        int snapLength = Integer.parseInt(lengthval);
-//        if(type == 1){
-//            startIndex += 2; //The buyer CANNOT LOCK / UNLOCK THE DEAL
-//            snapLength -= 2;
-//        }
-        Log.e("Trimmed: ", "" + str.substring(startIndex, snapLength + startIndex));
-        return str.substring(startIndex, snapLength + startIndex);
     }
 
   //Image Button was pressed
@@ -600,14 +686,7 @@ public class ChatRoomActivity extends AppCompatActivity {
       e.printStackTrace();
     }
     col = "";
-      if(type == 0) {
-          col = "Received";
-          if(HomePage.allMsgs == null){
-              HomePage.allMsgs = saveData;
-          }else {
-              HomePage.allMsgs += saveData;
-          }
-      }else if(type == 1) {
+      if(type == 1) {
           col = "sellingReceived";
           if(HomePage.buyingMsgs == null){
               HomePage.buyingMsgs = saveData;
@@ -626,7 +705,7 @@ public class ChatRoomActivity extends AppCompatActivity {
       String WhereClause = "name = " + "'" + otherUser + "'";
       DataQueryBuilder dataQuery = DataQueryBuilder.create();
       dataQuery.setWhereClause(WhereClause);
-      Backendless.Data.of("Messages").find(dataQuery,
+      Backendless.Data.of("Messaging").find(dataQuery,
               new AsyncCallback<List<Map>>() {
                   @Override
                   public void handleResponse( List<Map> response )
@@ -637,7 +716,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                       }
                       final String sendMsgs = temp + saveData;
                       response.get(0).put(col, sendMsgs);
-                      Backendless.Persistence.of("Messages").save(response.get(0), new AsyncCallback<Map>() {
+                      Backendless.Persistence.of("Messaging").save(response.get(0), new AsyncCallback<Map>() {
                           @Override
                           public void handleResponse(Map response) {
                           }
@@ -655,16 +734,12 @@ public class ChatRoomActivity extends AppCompatActivity {
                   }
               } );
 
-    Backendless.Data.of("Messages").findById(MsgID,
+    Backendless.Data.of("Messaging").findById(MsgID,
             new AsyncCallback<Map>() {
               @Override
               public void handleResponse( Map response )
               {
-                  if(type == 0) {
-                      if(HomePage.allMsgs.length() > 6) {
-                          response.put("allMsgs", HomePage.allMsgs);
-                      }
-                  }else if(type == 1) {
+                  if(type == 1) {
                       if(HomePage.buyingMsgs.length() > 6) {
                           response.put("buyingMsgs", HomePage.buyingMsgs);
                       }
@@ -673,7 +748,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                           response.put("sellingMsgs", HomePage.sellingMsgs);
                       }
                   }
-                  Backendless.Persistence.of("Messages").save(response, new AsyncCallback<Map>() {
+                  Backendless.Persistence.of("Messaging").save(response, new AsyncCallback<Map>() {
                       @Override
                       public void handleResponse(Map response) {
                           // Contact objecthas been updated
@@ -697,99 +772,37 @@ public class ChatRoomActivity extends AppCompatActivity {
     message.getText().clear();
   }
 
-  private void saveData(){
-        processing = true;
-        String data = "";
-
-        for(int i = 0; i < snapShotdata.length; i++){
-            data += snapShotdata[i] + "#";
-        }
-        String w1 = "";
-        String w2 = "";
-      if(type == 1){
-          w1 = "name = " + "'" + receiving + "'";
-          w2 = "name = " + "'" + name + "'";
-      }else{
-          w1 = "name = " + "'" + name + "'";
-          w2 = "name = " + "'" + receiving + "'";
-      }
-      final String finalData = data;
-      final String secondSave = w2;
-
+  private void getLinks(){
+      final String w1 = "name = " + "'" + seller + "'";
+      final String w2 = "name = " + "'" + buyer + "'";
       DataQueryBuilder dataQuery = DataQueryBuilder.create();
       dataQuery.setWhereClause(w1);
-      Backendless.Data.of("Messages").find(dataQuery,
+      Backendless.Data.of("Messaging").find(dataQuery,
               new AsyncCallback<List<Map>>() {
                   @Override
                   public void handleResponse(List<Map> foundUsers) {
                       if (foundUsers.size() >= 0) {
-                          if (foundUsers.get(0).get("sellingData") != null) {
-                              String toUpload = foundUsers.get(0).get("sellingData").toString();
-//                              Log.e("Stage 1", "" + toUpload);
-                              toUpload = toUpload.replace(OGsnapShot, finalData);
-//                              Log.e("Stage 1.1", "" + toUpload);
-                              foundUsers.get(0).put("sellingData", toUpload);
-                              Backendless.Persistence.of("Messages").save(foundUsers.get(0), new AsyncCallback<Map>() {
-                                  @Override
-                                  public void handleResponse(Map response) {
-//                                      Log.e("Saved Stage 1", "");
-                                      DataQueryBuilder dataQuery = DataQueryBuilder.create();
-                                      dataQuery.setWhereClause(secondSave);
-                                      Backendless.Data.of("Messages").find(dataQuery,
-                                              new AsyncCallback<List<Map>>() {
-                                                  @Override
-                                                  public void handleResponse(List<Map> foundUsers) {
-                                                      if (foundUsers.size() >= 0) {
-                                                          if (foundUsers.get(0).get("buyingData") != null) {
-
-                                                              String toUpload = foundUsers.get(0).get("buyingData").toString();
-                                                              if(type == 1 && completed){
-                                                                  if(locked){
-                                                                      OGsnapShot = "1" + "#" + OGsnapShot;
-                                                                  }else{
-                                                                      OGsnapShot = "0" + "#" + OGsnapShot;
-                                                                  }
-
-                                                                  toUpload = toUpload.replace(OGsnapShot, "2" + "#" +finalData);
-
-                                                              }else {
-                                                                  toUpload = toUpload.replace(OGsnapShot, finalData);
-                                                              }
-                                                              foundUsers.get(0).put("buyingData", toUpload);
-                                                              Backendless.Persistence.of("Messages").save(foundUsers.get(0), new AsyncCallback<Map>() {
-                                                                  @Override
-                                                                  public void handleResponse(Map response) {
-                                                                    getData(ChatRoomActivity.this);
-                                                                  }
-
-                                                                  @Override
-                                                                  public void handleFault(BackendlessFault fault) {
-                                                                      // an error has occurred, the error code can be retrieved with fault.getCode()
-                                                                  }
-                                                              });
-
-                                                          } else {
-                                                              Displayer.alertDisplayer("Error retreiving Deal Data: ", "Any Changes made, may not have gone through", ChatRoomActivity.this);
-                                                          }
-                                                      }
-                                                  }
-                                                  @Override
-                                                  public void handleFault(BackendlessFault fault) {
-                                                      Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
-                                                      Displayer.alertDisplayer("Error retreiving Deal Data: ", "Any Changes made, may not have gone through", ChatRoomActivity.this);
-                                                  }
-                                              });
-                                  }
-
-                                  @Override
-                                  public void handleFault(BackendlessFault fault) {
-                                      // an error has occurred, the error code can be retrieved with fault.getCode()
-                                  }
-                              });
-
-                          } else {
-                              Displayer.alertDisplayer("Error retreiving seller Profile: ", "Please Reload Chat", ChatRoomActivity.this);
-                          }
+                          sellerlink = foundUsers.get(0).get("sellingDataGson").toString();
+                          selleruploadlink = "/profileData/" +
+                                  foundUsers.get(0).get("userID").toString() + "/";
+                          DataQueryBuilder query = DataQueryBuilder.create();
+                          query.setWhereClause(w2);
+                          Backendless.Data.of("Messaging").find(query,
+                                  new AsyncCallback<List<Map>>() {
+                                      @Override
+                                      public void handleResponse(List<Map> foundUsers) {
+                                          if (foundUsers.size() >= 0) {
+                                              buyerlink = foundUsers.get(0).get("buyingDataGson").toString();
+                                              buyeruploadlink = "/profileData/" +
+                                                                foundUsers.get(0).get("userID").toString() + "/";
+                                          }
+                                      }
+                                      @Override
+                                      public void handleFault(BackendlessFault fault) {
+                                          Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+                                          Displayer.alertDisplayer("Error retreiving seller Profile: ", "Please Reload Chat", ChatRoomActivity.this);
+                                      }
+                                  });
                       }
                   }
                   @Override
@@ -799,5 +812,74 @@ public class ChatRoomActivity extends AppCompatActivity {
                   }
               });
   }
+
+    private void getGson(){
+        processing = true;
+        startTimer(6);
+        final String w1 = "name = " + "'" + seller + "'";
+        final String w2 = "name = " + "'" + buyer + "'";
+        downloadFile(sellerlink, 2, ChatRoomActivity.this);
+
+    }
+
+  private void saveGson(){
+
+      final String w1 = "name = " + "'" + seller + "'";
+      final String w2 = "name = " + "'" + buyer + "'";
+      final String sellergsonData = new Gson().toJson(sellerGson).toString();
+      final String buyergsonData = new Gson().toJson(buyerGson).toString();
+      Log.e("SELLER DATA", "" + sellergsonData);
+      Log.e("BUYER DATA", "" + buyergsonData);
+
+      try {
+          String path = getFilesDir() + "/tempData/" + "sellingDataGson.txt";
+          FileOutputStream writer = new FileOutputStream (path);
+          writer.write(sellergsonData.getBytes());
+          writer.close();
+          final File sellergsonFile = new File(path);
+          String p = getFilesDir() + "/tempData/" + "buyingDataGson.txt";
+          FileOutputStream w = new FileOutputStream (p);
+          w.write(buyergsonData.getBytes());
+          w.close();
+          final File buyergsonFile = new File(p);
+          Log.i("File Closed ", "File Stuff");
+          Backendless.Files.upload( sellergsonFile, selleruploadlink, true, new AsyncCallback<BackendlessFile>(){
+              @Override
+              public void handleResponse(BackendlessFile response) {
+                  final String location = response.getFileURL();
+                  Log.i("Location ", location);
+                  sellergsonFile.delete();
+                  Log.i("File Closed ", "File Stuff");
+                  Backendless.Files.upload( buyergsonFile, buyeruploadlink, true, new AsyncCallback<BackendlessFile>(){
+                      @Override
+                      public void handleResponse(BackendlessFile response) {
+                          final String location = response.getFileURL();
+                          Log.i("Location ", location);
+                          buyergsonFile.delete();
+                      }
+
+                      @Override
+                      public void handleFault(BackendlessFault fault) {
+                          Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+                      }
+                  });
+              }
+
+              @Override
+              public void handleFault(BackendlessFault fault) {
+                  Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+              }
+          });
+      } catch (IOException e) {
+          e.printStackTrace();
+      }
+
+  }
+
+  private void saveData(){
+      getGson();
+  }
+
+
 
 }

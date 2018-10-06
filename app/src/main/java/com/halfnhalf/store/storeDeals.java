@@ -174,6 +174,9 @@ public class storeDeals extends AppCompatActivity{
                 setResult(RESULT_OK,intent);
                 finish();
                 return true;
+        }else if (item.getItemId() == R.id.back) {
+            onBackPressed();
+            return true;
         }else{
             return super.onOptionsItemSelected(item);
         }

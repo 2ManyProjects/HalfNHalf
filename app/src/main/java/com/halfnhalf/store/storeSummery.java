@@ -1,5 +1,7 @@
 package com.halfnhalf.store;
 
+import com.google.gson.Gson;
+
 public class storeSummery {
     private String [] deals = {"", "", ""};
     private String address;
@@ -7,14 +9,15 @@ public class storeSummery {
     private int index = 0;
     private String userName;
     private Store storeData;
-    private String profSnapshot = "";
+    private String snapshotGson;
 
-    public String getProfSnapshot() {
-        return profSnapshot;
+
+    public void setsnapshotGson(String snapshotGson) {
+        this.snapshotGson = snapshotGson;
     }
 
-    public void setProfSnapshot(String profSnapshot) {
-        this.profSnapshot = profSnapshot;
+    public String getsnapshotGson() {
+        return snapshotGson;
     }
 
     public storeSummery(String user, String name, String address){
@@ -22,8 +25,19 @@ public class storeSummery {
         this.name = name;
         this.address = address;
     }
-    public void addDeal(String val){
-        deals[index] = val+"%";
+
+    public void addDeal(String val, boolean atCost){
+        float value = 0.0f;
+        if(atCost) {
+            if(Integer.parseInt(val) < 20)
+                value = Float.parseFloat(val) * 1.50f;
+            else
+                value = Float.parseFloat(val) * 1.20f;
+        }else {
+            value = Float.parseFloat(val) * 0.90f;
+        }
+        deals[index] = Integer.toString((int) Math.floor(value))+"%";
+//        deals[index] = val;
         index++;
     }
     public String[] getDeals(){

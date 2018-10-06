@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.Looper;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -13,13 +14,29 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.backendless.Backendless;
+import com.backendless.BackendlessUser;
 import com.backendless.async.callback.AsyncCallback;
 import com.backendless.exceptions.BackendlessFault;
+import com.backendless.files.BackendlessFile;
 import com.backendless.persistence.DataQueryBuilder;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.halfnhalf.Messaging.ChatRoomActivity;
 import com.halfnhalf.Messaging.Message;
+import com.halfnhalf.store.Store;
 import com.halfnhalf.store.storeSummery;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Array;
+import java.lang.reflect.Type;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -60,10 +77,16 @@ public class SummeryAdapter extends RecyclerView.Adapter<SummeryAdapter.MyViewHo
         private FloatingActionButton msg;
         private Context mContext;
         private storeSummery mCurrentStore;
+        private ArrayList<Store> buyingstoreList = new ArrayList<Store>();
+        private ArrayList<Store> sellingstoreList = new ArrayList<Store>();
+        private String Seller;
+        private String currentUser = MainLogin.getUser().getProperty("name").toString();
+        private View view;
 
 
         MyViewHolder(Context context, View itemView) {
             super(itemView);
+            view = itemView;
 
             //Initialize the views
             mUserName = (TextView)itemView.findViewById(R.id.UserName);
@@ -94,68 +117,131 @@ public class SummeryAdapter extends RecyclerView.Adapter<SummeryAdapter.MyViewHo
         }
 
         private void openDeal(String seller, storeSummery store, Context c){
-            final storeSummery sum = store;
-            final Context mContext = c;
-            final String sellingUser = seller;
-            final String currentUser = Backendless.UserService.CurrentUser().getProperty("name").toString();
-            String WhereClause = "name = " + "'" + seller + "'";
+            mCurrentStore = store;
+            Seller = seller;
+            getBuyingData();
+        }
+
+        public void downloadFile( String path, storeSummery sum, int type){
+            final storeSummery summery = sum;
+            final String p = path;
+            final int t = type;
+            new Thread(new Runnable() {
+                public void run() {
+                    URL url = null;
+                    try {
+                        url = new URL(p);
+                        String tempData = mContext.getFilesDir() + "/tempData/" + "Gson.txt";
+                        downloadFromUrl(url, tempData, summery, t);
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
+        }
+        private void downloadFromUrl(URL url, String localFilename, storeSummery sum, int t) throws IOException {
+            InputStream is = null;
+            FileOutputStream fos = null;
+            final storeSummery summery = sum;
+
+            try {
+                URLConnection urlConn = url.openConnection();//connect
+
+                is = urlConn.getInputStream();               //get connection inputstream
+                fos = new FileOutputStream(localFilename);   //open outputstream to local file
+
+                byte[] buffer = new byte[4096];              //declare 4KB buffer
+                int len;
+
+                //while we have availble data, continue downloading and storing to local file
+                while ((len = is.read(buffer)) > 0) {
+                    fos.write(buffer, 0, len);
+                }
+                BufferedReader in = new BufferedReader(new FileReader(localFilename));
+                String data = in.readLine();
+                Gson gson = new Gson();
+                Type type = new TypeToken<ArrayList<Store>>(){}.getType();
+                ArrayList<Store> temp = gson.fromJson(data, type);
+                File file = new File(localFilename);
+                file.delete();
+                fos.close();
+                is.close();
+                in.close();
+                if(t == 0) {
+                    buyingstoreList = temp;
+                    if(checkPassedDeals() == false)
+                        getSellingData();
+                }else if(t == 1) {
+                    sellingstoreList = temp;
+                    getBuyingData();
+                }
+            } finally {
+                try {
+                    if (is != null) {
+                        is.close();
+                    }
+                } finally {
+                    if (fos != null) {
+                        fos.close();
+                    }
+                }
+            }
+        }
+
+        private boolean checkPassedDeals(){
+            for(int i = 0; i < buyingstoreList.size(); i++){
+                Store thisStore = buyingstoreList.get(i);
+                if(thisStore.getSeller().equals(Seller)){
+                    if (Looper.myLooper() == null){
+                        Looper.prepare();
+                    }
+                    if(thisStore.getDealProgression() == 0){
+                        Displayer.setSnackBar(view, "Please Complete your current deal with: " + Seller);
+                    }if(thisStore.getDealProgression() == 1){
+                        Displayer.setSnackBar(view, "You have an Open Locked Deal with: " + Seller + ". Please \n complete that first");
+                    }else if(thisStore.getDealProgression() == 4){
+                        Displayer.setSnackBar(view, "You have Completed the deal but  " + Seller + " has not");
+                    }else if(thisStore.getDealProgression() == 5){
+                        Displayer.setSnackBar(view, Seller + " Has Completed the deal you have not");
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+        private void getBuyingData(){
+            Backendless.Data.of("Messaging").findById(MainLogin.getUser().getProperty("messageID").toString(),
+                    new AsyncCallback<Map>() {
+                        @Override
+                        public void handleResponse(Map foundUser) {
+                            if(foundUser.get("buyingDataGson") != null)
+                                downloadFile(foundUser.get("buyingDataGson").toString(), mCurrentStore, 0);
+                            else
+                                launch();
+                        }
+
+                        @Override
+                        public void handleFault(BackendlessFault fault) {
+                            Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+                        }
+                    });
+        }
+
+        private void getSellingData(){
+            String WhereClause = "name = " + "'" + Seller + "'";
             DataQueryBuilder dataQuery = DataQueryBuilder.create();
             dataQuery.setWhereClause(WhereClause);
-            Backendless.Data.of("Messages").find(dataQuery,
+            Backendless.Data.of("Messaging").find(dataQuery,
                     new AsyncCallback<List<Map>>() {
                         @Override
                         public void handleResponse(List<Map> foundUsers) {
                             if (foundUsers.size() >= 0) {
-                                String sellingData = "";
-                                if (foundUsers.get(0).get("sellingData") != null) {
-                                    sellingData = foundUsers.get(0).get("sellingData").toString();
-                                    //Checking for any Open Deals
-                                    if(sellingData.contains("0" + "#" + currentUser + "#" + sellingUser + "#") ||
-                                            sellingData.contains("1" + "#" + currentUser + "#" + sellingUser + "#")){
-                                        AlertDialog.Builder builder = new AlertDialog.Builder(mContext)
-                                                .setCancelable(false)
-                                                .setTitle("Deal in Progess")
-                                                .setMessage("Please Complete your current deal with: " + sellingUser)
-                                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                                    @Override
-                                                    public void onClick(DialogInterface dialog, int which) {
-                                                        dialog.cancel();
-                                                    }
-                                                });
-                                        AlertDialog ok = builder.create();
-                                        ok.show();
-                                    }else if(sellingData.contains("4" + "#" + currentUser + "#" + sellingUser + "#")){
-                                        AlertDialog.Builder builder = new AlertDialog.Builder(mContext)
-                                                .setCancelable(false)
-                                                .setTitle("Deal in Progess")
-                                                .setMessage("You have Completed the deal but  " + sellingUser + " has not")
-                                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                                    @Override
-                                                    public void onClick(DialogInterface dialog, int which) {
-                                                        dialog.cancel();
-                                                    }
-                                                });
-                                        AlertDialog ok = builder.create();
-                                        ok.show();
-                                    }else if(sellingData.contains("5" + "#" + currentUser + "#" + sellingUser + "#")){
-                                        AlertDialog.Builder builder = new AlertDialog.Builder(mContext)
-                                                .setCancelable(false)
-                                                .setTitle("Deal in Progess")
-                                                .setMessage(sellingUser + "Has Completed the deal you have not")
-                                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                                                    @Override
-                                                    public void onClick(DialogInterface dialog, int which) {
-                                                        dialog.cancel();
-                                                    }
-                                                });
-                                        AlertDialog ok = builder.create();
-                                        ok.show();
-                                    }else{
-                                        launch(sum);
-                                    }
-                                } else {
-                                    launch(sum);
-                                }
+                                if(foundUsers.get(0).get("sellingDataGson") != null)
+                                    downloadFile(foundUsers.get(0).get("sellingDataGson").toString(), mCurrentStore, 1);
+                                else
+                                    launch();
                             }
                         }
 
@@ -167,89 +253,132 @@ public class SummeryAdapter extends RecyclerView.Adapter<SummeryAdapter.MyViewHo
         }
 
         //Nested Saving then Launch, save the data to Buyers BuyingData then Sellers SellingData
-        private void launch(storeSummery store){
-            final String rec = store.getUserName();
-            final String send = Backendless.UserService.CurrentUser().getProperty("name").toString();
-
-            final storeSummery saveStore = store;
-            String WhereClause = "name = " + "'" + send + "'";
-            DataQueryBuilder dataQuery = DataQueryBuilder.create();
+        private void launch(){
+            buyingstoreList.add(mCurrentStore.getStore());
+            sellingstoreList.add(mCurrentStore.getStore());
+            final String buyingDataGson = new Gson().toJson(buyingstoreList).toString();
+            final String sellingDataGson = new Gson().toJson(sellingstoreList).toString();
+            String WhereClause = "name = " + "'" + currentUser + "'";
+            final DataQueryBuilder dataQuery = DataQueryBuilder.create();
             dataQuery.setWhereClause(WhereClause);
-            Backendless.Data.of("Messages").find(dataQuery,
-                    new AsyncCallback<List<Map>>() {
-                        @Override
-                        public void handleResponse(List<Map> foundUsers) {
-                            if (foundUsers.size() >= 0) {
-                                String save = "";
-                                if(foundUsers.get(0).get("buyingData") != null)
-                                    save += foundUsers.get(0).get("buyingData").toString();
-                                save += saveStore.getProfSnapshot();
-                                foundUsers.get(0).put("buyingData", save);
-                                Backendless.Persistence.of("Messages").save(foundUsers.get(0), new AsyncCallback<Map>() {
+
+            try {
+                String path = mContext.getFilesDir() + "/tempData/" + "buyingDataGson" + ".txt";
+                FileOutputStream writer = new FileOutputStream(path);
+                writer.write(buyingDataGson.getBytes());
+                writer.close();
+                final File buyingDataGsonFile = new File(path);
+                path = mContext.getFilesDir() + "/tempData/" + "sellingDataGson" + ".txt";
+                writer = new FileOutputStream(path);
+                writer.write(sellingDataGson.getBytes());
+                writer.close();
+                final File sellingDataGsonFile = new File(path);
+                //Uploading the new Buying Gson File to the Buyer
+                Backendless.Files.upload( buyingDataGsonFile, "/profileData/" + MainLogin.getUser().getObjectId() + "/", true, new AsyncCallback<BackendlessFile>(){
+                    @Override
+                    public void handleResponse(BackendlessFile response) {
+                        final String location = response.getFileURL();
+                        Log.i("Location ", location);
+                        Backendless.Data.of("Messaging").find(dataQuery,
+                                new AsyncCallback<List<Map>>() {
                                     @Override
-                                    public void handleResponse(Map response) {
+                                    public void handleResponse(List<Map> foundUser) {
+                                        foundUser.get(0).put("buyingDataGson", location);
+                                        Backendless.Persistence.of("Messaging").save( foundUser.get(0), new AsyncCallback<Map>()
+                                        {
+                                            @Override
+                                            public void handleResponse( Map backendlessUser )
+                                            {
+                                                buyingDataGsonFile.delete();
+                                                MainLogin.reloadUserData();
+                                                String Clause = "name = " + "'" + Seller + "'";
+                                                final DataQueryBuilder query = DataQueryBuilder.create();
+                                                query.setWhereClause(Clause);
+                                                //Uploading the new Selling Gson File to the Seller
+                                                Backendless.Data.of("Messaging").find(query,
+                                                        new AsyncCallback<List<Map>>() {
+                                                            @Override
+                                                            public void handleResponse(List<Map> foundUser) {
+                                                                final Map saveSeller = foundUser.get(0);
+                                                                Backendless.Files.upload( sellingDataGsonFile, "/profileData/" + saveSeller.get("userID") + "/", true, new AsyncCallback<BackendlessFile>(){
+                                                                    @Override
+                                                                    public void handleResponse(BackendlessFile response) {
+                                                                        final String location = response.getFileURL();
+                                                                        Log.i("Location ", location);
+                                                                        Log.i("String value", location.toString());
+                                                                        saveSeller.put("sellingDataGson", location);
+                                                                        Backendless.Persistence.of("Messaging").save( saveSeller, new AsyncCallback<Map>()
+                                                                        {
 
-                                        String WhereClause = "name = " + "'" + rec + "'";
-                                        DataQueryBuilder dataQuery = DataQueryBuilder.create();
-                                        dataQuery.setWhereClause(WhereClause);
-                                        Backendless.Data.of("Messages").find(dataQuery,
-                                                new AsyncCallback<List<Map>>() {
-                                                    @Override
-                                                    public void handleResponse(List<Map> foundUsers) {
-                                                        if (foundUsers.size() >= 0) {
-                                                            String save = "";
-                                                            if(foundUsers.get(0).get("sellingData") != null)
-                                                                save += foundUsers.get(0).get("sellingData").toString();
-                                                            save += saveStore.getProfSnapshot();
-                                                            foundUsers.get(0).put("sellingData", save);
-                                                            Backendless.Persistence.of("Messages").save(foundUsers.get(0), new AsyncCallback<Map>() {
-                                                                @Override
-                                                                public void handleResponse(Map response) {
-                                                                    int index = HomePage.getIndexofMessage(send, rec, 1);
-                                                                    if(index == -1){
-                                                                        ArrayList<Message> tempMessage = new ArrayList<>();
-                                                                        HomePage.buyingMessages.add(tempMessage);
-                                                                        index = HomePage.buyingMessages.size() -1;
+                                                                            @Override
+                                                                            public void handleResponse(Map response) {
+                                                                                sellingDataGsonFile.delete();
+                                                                                launchChatRoom();
+
+                                                                            }
+
+                                                                            @Override
+                                                                            public void handleFault( BackendlessFault backendlessFault )
+                                                                            {
+
+                                                                            }
+                                                                        }  );
                                                                     }
-                                                                    final Intent intent;
-                                                                    intent = new Intent(mContext, ChatRoomActivity.class);
-                                                                    intent.putExtra("name", send);
-                                                                    intent.putExtra("othername", rec);
-                                                                    intent.putExtra("type", 100);
-                                                                    intent.putExtra("index", index);
-                                                                    mContext.startActivity(intent);
-                                                                }
 
-                                                                @Override
-                                                                public void handleFault(BackendlessFault fault) {
-                                                                    // an error has occurred, the error code can be retrieved with fault.getCode()
-                                                                }
-                                                            });
-                                                        }
-                                                    }
+                                                                    @Override
+                                                                    public void handleFault(BackendlessFault fault) {
+                                                                        Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+                                                                    }
+                                                                });
+                                                            }
 
-                                                    @Override
-                                                    public void handleFault(BackendlessFault fault) {
-                                                        Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
-                                                    }
-                                                });
+                                                            @Override
+                                                            public void handleFault(BackendlessFault fault) {
+                                                                Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+                                                            }
+                                                        });
+                                            }
 
+                                            @Override
+                                            public void handleFault(BackendlessFault fault) {
+
+                                            }
+                                        });
                                     }
 
                                     @Override
                                     public void handleFault(BackendlessFault fault) {
-                                        // an error has occurred, the error code can be retrieved with fault.getCode()
+                                        Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
                                     }
                                 });
-                            }
-                        }
+                    }
 
-                        @Override
-                        public void handleFault(BackendlessFault fault) {
-                            Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
-                        }
-                    });
+                    @Override
+                    public void handleFault(BackendlessFault fault) {
+                        Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+                    }
+                });
+            }catch(IOException e){
 
+            }
+
+        }
+
+        private void launchChatRoom(){
+            Log.i("LAUNCHING CHAT ROOM", "" + " BUILT DATA");
+            int index = HomePage.getIndexofMessage(currentUser, Seller, 1);
+            if(index == -1){
+                ArrayList<Message> tempMessage = new ArrayList<>();
+                HomePage.buyingMessages.add(tempMessage);
+                index = HomePage.buyingMessages.size() -1;
+            }
+            final Intent intent;
+            intent = new Intent(mContext, ChatRoomActivity.class);
+            intent.putExtra("name", currentUser);
+            intent.putExtra("othername", Seller);
+            intent.putExtra("type", 100);
+            intent.putExtra("index", index);
+            mContext.startActivity(intent);
         }
     }
 }

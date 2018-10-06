@@ -140,7 +140,8 @@ public class messageListener extends Service {
     public void initializeTimerTask() {
         timerTask = new TimerTask() {
             public void run() {
-                Log.i("still Running", "" + (counter++));
+                if((counter % 100) == 0)
+                    Log.i("still Running", "" + (counter++));
                 getMsg();
             }
         };
@@ -161,7 +162,7 @@ public class messageListener extends Service {
 
     private void getMsg(){
         data = null;
-        Backendless.Data.of("Messages").findById(MsgID,
+        Backendless.Data.of("Messaging").findById(MsgID,
                 new AsyncCallback<Map>() {
                     @Override
                     public void handleResponse( Map response ) {

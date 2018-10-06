@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.TypedArray;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
@@ -23,6 +24,7 @@ import com.backendless.Backendless;
 import com.backendless.BackendlessUser;
 import com.backendless.async.callback.AsyncCallback;
 import com.backendless.exceptions.BackendlessFault;
+import com.backendless.files.BackendlessFile;
 import com.backendless.persistence.DataQueryBuilder;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -31,7 +33,20 @@ import com.halfnhalf.store.Store;
 import com.halfnhalf.store.StoreAdapter;
 import com.halfnhalf.store.storeDeals;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Type;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -56,12 +71,13 @@ public class Profile extends AppCompatActivity {
     private FloatingActionButton add;
     public static View.OnClickListener myOnClickListener;
     private ArrayList<String> removed;
+    private boolean fromJson = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
-
+        fromJson = false;
         removed = new ArrayList<>();
 
         myOnClickListener = new MyOnClickListener(this);
@@ -77,16 +93,15 @@ public class Profile extends AppCompatActivity {
 
         Profileadapter = new StoreAdapter(Profile.this, Profiledataset);
         ProfilerecyclerView.setAdapter(Profileadapter);
-
-        Bundle bundle = getIntent().getExtras();
-        if(bundle != null){
-            userInfo[2] = getIntent().getStringExtra("objectID");
-            this.userData = bundle.getString("String");
+        userInfo[2] = MainLogin.getUser().getObjectId();
+        this.userData = (String) MainLogin.getUser().getProperty("profileData");
+        String profileID = (String) MainLogin.getUser().getProperty("profile");
+        if(profileID == null)
+            saveProfile(1);
+        else
             initUserProfile();
-        }else{
-            Displayer.toaster("Error getting user Data", "l", this);
-            finish();
-        }
+
+
         Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(myToolbar);
 
@@ -143,38 +158,73 @@ public class Profile extends AppCompatActivity {
 
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.save) {
-            final String temp = createProfile();
-
-            Backendless.Data.of(BackendlessUser.class).findById(Backendless.UserService.CurrentUser().getObjectId(),
-                    new AsyncCallback<BackendlessUser>() {
-                        @Override
-                        public void handleResponse(BackendlessUser foundUser) {
-                            foundUser.setProperty("profileData", temp);
-                            Backendless.UserService.update( foundUser, new AsyncCallback<BackendlessUser>()
-                            {
-                                @Override
-                                public void handleResponse( BackendlessUser backendlessUser )
-                                {
-                                    Log.i("UPDATED PROFILE", " " + temp);
-                                }
-
-                                @Override
-                                public void handleFault( BackendlessFault backendlessFault )
-                                {
-
-                                }
-                            }  );
-                        }
-
-                        @Override
-                        public void handleFault(BackendlessFault fault) {
-                            Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
-                        }
-                    });
+            saveProfile(0);
             return true;
-
         }else{
             return super.onOptionsItemSelected(item);
+        }
+    }
+
+    private void saveProfile(int type){
+        final int t = type;
+        final String temp = createProfile();
+        final String gsonData = new Gson().toJson(Profiledataset).toString();
+
+        Log.i("Gson Data: ", gsonData);
+        try {
+            String path = getFilesDir() + "/tempData/" + MainLogin.getUser().getObjectId() + ".txt";
+            FileOutputStream writer = new FileOutputStream (path);
+            writer.write(gsonData.getBytes());
+            writer.close();
+            final File gsonFile = new File(path);
+            Log.i("File Closed ", "File Stuff");
+            Backendless.Files.upload( gsonFile, "/profileData/" + MainLogin.getUser().getObjectId(), true, new AsyncCallback<BackendlessFile>(){
+                @Override
+                public void handleResponse(BackendlessFile response) {
+                    final String location = response.getFileURL();
+                    Log.i("Location ", location);
+                    Log.i("String value", location.toString());
+                    Backendless.Data.of(BackendlessUser.class).findById(Backendless.UserService.CurrentUser().getObjectId(),
+                            new AsyncCallback<BackendlessUser>() {
+                                @Override
+                                public void handleResponse(BackendlessUser foundUser) {
+                                    foundUser.setProperty("profileData", temp);
+                                    foundUser.setProperty("profile", location);
+                                    Backendless.UserService.update( foundUser, new AsyncCallback<BackendlessUser>()
+                                    {
+                                        @Override
+                                        public void handleResponse( BackendlessUser backendlessUser )
+                                        {
+                                            Log.i("UPDATED PROFILE", " " + temp);
+                                            gsonFile.delete();
+                                            if(t == 1) {
+                                                MainLogin.reloadUserData();
+                                                startTimer(1);
+                                            }
+                                        }
+
+                                        @Override
+                                        public void handleFault( BackendlessFault backendlessFault )
+                                        {
+
+                                        }
+                                    }  );
+                                }
+
+                                @Override
+                                public void handleFault(BackendlessFault fault) {
+                                    Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+                                }
+                            });
+                }
+
+                @Override
+                public void handleFault(BackendlessFault fault) {
+                    Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -230,14 +280,12 @@ public class Profile extends AppCompatActivity {
         }
     }
 
-    public String getUserData() {
-        return userData;
-    }
-
     public void initUserProfile(){
+        fromJson = false;
+        startTimer(0);
         arrayData = userData.split("#");
-        userInfo[0] = arrayData[0];
-        userInfo[1] = arrayData[1];
+        userInfo[0] = MainLogin.getUser().getProperty("name").toString();
+        userInfo[1] = MainLogin.getUser().getEmail().toString();
         versionNum = Integer.parseInt(arrayData[2]);
         numStores = Integer.parseInt(arrayData[3]);
         populateProfile();
@@ -261,38 +309,103 @@ public class Profile extends AppCompatActivity {
         return temp;
     }
 
-    private void populateProfile(){
-        ImageResources = getResources().obtainTypedArray(R.array.images);
-        int num = 0;
-        if(numStores == 0)
-            return;
-        for(int i = 4; i < arrayData.length; i++){
-            int counter = 3;//Accomodate STOREID, NAME, ADDRESS
-            Store temp = new Store(arrayData[i], arrayData[i+1], remakeString(arrayData[i+2]), ImageResources.getResourceId((num % 10),0));
-            temp.setNew(false);
-            if(Integer.parseInt(arrayData[i+3]) == 0){
-                Profiledataset.add(temp);
-                num++;
-                i += counter;
-            }else {
-                for (int x = i + 4; x < (i + 4) + Integer.parseInt(arrayData[i + 3]) * 8; x++) {
-                    counter += 8;
-                    temp.addDeal(arrayData[x],
-                            remakeString(arrayData[x + 1]),
-                            arrayData[x + 2],
-                            arrayData[x + 3],
-                            Boolean.parseBoolean(arrayData[x + 4]),
-                            Boolean.parseBoolean(arrayData[x + 5]),
-                            arrayData[x + 6],
-                            arrayData[x + 7]);
-                    x += 7;
+    public void downloadFile( String path ){
+        final String p = path;
+        new Thread(new Runnable() {
+            public void run() {
+                URL url = null;
+                try {
+                    url = new URL(p);
+                    String tempData = Profile.this.getFilesDir() + "/tempData/" + "profileGson.txt";
+                    downloadFromUrl(url, tempData, 0);
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-                Profiledataset.add(temp);
-                num++;
-                i += counter;
+            }
+        }).start();
+    }
+
+    private void downloadFromUrl(URL url, String localFilename, int x) throws IOException {
+        InputStream is = null;
+        FileOutputStream fos = null;
+
+        try {
+            URLConnection urlConn = url.openConnection();//connect
+
+            is = urlConn.getInputStream();               //get connection inputstream
+            fos = new FileOutputStream(localFilename);   //open outputstream to local file
+
+            byte[] buffer = new byte[4096];              //declare 4KB buffer
+            int len;
+
+            //while we have availble data, continue downloading and storing to local file
+            while ((len = is.read(buffer)) > 0) {
+                fos.write(buffer, 0, len);
+            }
+            BufferedReader in = new BufferedReader(new FileReader(localFilename));
+            String data = in.readLine();
+            Gson gson = new Gson();
+            Type type = new TypeToken<ArrayList<Store>>(){}.getType();
+            ArrayList<Store> temp = gson.fromJson(data, type);
+            for(int i = 0; i < temp.size(); i++){
+                numStores ++;
+                Profiledataset.add(temp.get(i));
+            }
+            if(x == 0)
+                fromJson = true;
+            File file = new File(localFilename);
+            file.delete();
+            fos.close();
+            is.close();
+            in.close();
+        } finally {
+            try {
+                if (is != null) {
+                    is.close();
+                }
+            } finally {
+                if (fos != null) {
+                    fos.close();
+                }
             }
         }
-        Profileadapter.notifyDataSetChanged();
+    }
+
+    private void startTimer(int x){
+        final int y = x;
+        if(x == 0) {
+            if(!fromJson) {
+                new Handler().postDelayed(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        startTimer(y);
+                    }
+                }, MainLogin.DELAY_TIME);
+            } else {
+                Profileadapter.notifyDataSetChanged();
+            }
+        }else if(x == 1){
+            if (MainLogin.processing) {
+                new Handler().postDelayed(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        startTimer(y);
+                    }
+                }, MainLogin.DELAY_TIME);
+            } else {
+                initUserProfile();
+            }
+        }
+    }
+
+        private void populateProfile(){
+            Log.i("Building", "" + "Profile");
+        ImageResources = getResources().obtainTypedArray(R.array.images);
+        downloadFile(MainLogin.getUser().getProperty("profile").toString());
     }
 
     private void queryStoreIDs(ArrayList<String> id, int x, boolean addingStore, boolean resume){
@@ -451,6 +564,7 @@ public class Profile extends AppCompatActivity {
         if (Profiledataset.size() < 1) {
             Store temp = new Store(ID, Name, address, ImageResources.getResourceId((numStores % 10),0));
             temp.setNew(true);
+            temp.setSeller(MainLogin.getUser().getProperty("name").toString());
             Profiledataset.add(temp);
             Profileadapter.notifyDataSetChanged();
             numStores += 1;

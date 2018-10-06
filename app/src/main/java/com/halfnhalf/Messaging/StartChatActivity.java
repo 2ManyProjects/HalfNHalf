@@ -45,9 +45,7 @@ public class StartChatActivity extends AppCompatActivity{
 
     Bundle bundle = getIntent().getExtras();
     type = bundle.getInt("type");
-    if(type == 0) {
-        allMessages = HomePage.Messages;
-    }else if(type == 1) {
+    if(type == 1) {
         allMessages = HomePage.buyingMessages;
     }else if(type == 2) {
         allMessages = HomePage.sellingMessages;
@@ -85,9 +83,7 @@ public class StartChatActivity extends AppCompatActivity{
     backpressed = false;
       Bundle bundle = getIntent().getExtras();
       type = bundle.getInt("type");
-      if(type == 0) {
-          allMessages = HomePage.Messages;
-      }else if(type == 1) {
+      if(type == 1) {
           allMessages = HomePage.buyingMessages;
       }else if(type == 2) {
           allMessages = HomePage.sellingMessages;
@@ -118,9 +114,7 @@ public class StartChatActivity extends AppCompatActivity{
         }
       }, MainLogin.DELAY_TIME);
     }else{
-        if(type == 0) {
-            allMessages = HomePage.Messages;
-        }else if(type == 1) {
+        if(type == 1) {
             allMessages = HomePage.buyingMessages;
         }else if(type == 2) {
             allMessages = HomePage.sellingMessages;

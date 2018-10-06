@@ -4,6 +4,7 @@ import android.util.Log;
 
 import java.io.Serializable;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.UUID;
 
 public class Deal implements Serializable {
@@ -67,7 +68,7 @@ public class Deal implements Serializable {
     }
 
     public String getText() {
-        return text;
+        return fix(text);
     }
 
     public String getTotalAmnt() {
@@ -128,7 +129,7 @@ public class Deal implements Serializable {
 
     public Deal(String rate, String text, String totalAmnt, String currentAmnt, boolean atCost, boolean reoccuring, String period, String year, String month, String day){
         this.rate = rate;
-        this.text = text;
+        this.text = " " + clean(text);
         this.totalAmnt = totalAmnt;
         this.currentAmnt = currentAmnt;
         if(Integer.parseInt(this.totalAmnt) >= 50) {
@@ -155,9 +156,24 @@ public class Deal implements Serializable {
         }
     }
 
+    private String clean(String str){
+        String temp = "";
+        temp = str.replaceAll("#", "~@");
+        return temp;
+    }
+
+
+    private String fix(String str){
+        String temp = "";
+        temp = str.replaceAll("~@", "#");
+        return temp;
+    }
+
+
+
     public Deal(String rate, String text, String totalAmnt, String currentAmnt, boolean atCost, boolean reoccuring, String period, String year, String month, String day, String id){
         this.rate = rate;
-        this.text = text;
+        this.text = " " + clean(text);
         this.totalAmnt = totalAmnt;
         this.currentAmnt = currentAmnt;
         if(Integer.parseInt(this.totalAmnt) >= 50)

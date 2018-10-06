@@ -30,6 +30,7 @@ import com.halfnhalf.DealAdapter;
 import com.halfnhalf.Displayer;
 import com.halfnhalf.MainLogin;
 import com.halfnhalf.R;
+import com.halfnhalf.store.Store;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -44,18 +45,15 @@ public class dealSelection extends AppCompatActivity {
     private ArrayList<String> removed = new ArrayList<>();
     private int type;
     private Toolbar myToolbar;
-    private String [] data;
-    private String headerData = "";
-    private String footerData = "";
+    private Store storeData;
     public static View.OnClickListener myOnClickListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_deal_selection);
-        Bundle bundle = getIntent().getExtras();
         type = ChatRoomActivity.type;
-        data = ChatRoomActivity.snapShotdata;
+        storeData = ChatRoomActivity.dealGson;
         Displayer.toaster("Type" + Integer.toString(type), "l", this);
 
         myOnClickListener = new MyOnClickListener(this);
@@ -78,34 +76,12 @@ public class dealSelection extends AppCompatActivity {
     }
 
     private void init(){
-        int startindex = 8;
-        for(int x = 0; x < startindex; x++){
-            headerData += data[x] + "#";
-        }
-//        for(int x = 0; x < data.length; x++){
-//            Log.e("DATA: ", " " + x + ": " + data[x] );
-//        }
-        for(int i = startindex; i < data.length - 2; i++){
-            String [] date = data[i + 8].split("~");
-                    Deal temp = new Deal(
-                    data[i],
-                    data[i + 1],
-                    data[i + 2],
-                    data[i + 3],
-                    Boolean.parseBoolean(data[i + 5]),
-                    Boolean.parseBoolean(data[i + 6]),
-                    data[i + 7],
-                    date[0],
-                    date[1],
-                    date[2]
-            );
-            temp.setSelectedAmnt(Integer.parseInt(data[i+4]));
-            temp.setSelected(Integer.parseInt(data[i+9]));
+        for(int i = 0; i < storeData.getData().size(); i++){
+            Deal temp = storeData.getData().get(i);
+
             Dealdataset.add(temp);
             Dealadapter.notifyDataSetChanged();
-            i+=9;
         }
-        footerData = data[data.length - 2] + "#" + data[data.length - 1] + "#";
     }
 
 
@@ -144,13 +120,7 @@ public class dealSelection extends AppCompatActivity {
     }
 
     private void save(){
-        String tempData = headerData;
-        for(int i = 0; i <Dealdataset.size();i++){
-            tempData += Dealdataset.get(i).toStringSelection();
-        }
-        tempData += footerData;
-        data = null;
-        data = tempData.split("#");
+        ChatRoomActivity.dealGson = storeData;
 
     }
 
@@ -171,7 +141,7 @@ public class dealSelection extends AppCompatActivity {
                     Displayer.alertDisplayer("The Seller has Locked or Completed this deal", "", dealSelection.this);
                 }else if(type == 1){
                     save();
-                    ChatRoomActivity.snapShotdata = data;
+                    ChatRoomActivity.dealGson.setStoreDeals(Dealdataset);
                     Intent intent = new Intent(this, ChatRoomActivity.class);
                     intent.putExtra("back", false);
                     setResult(RESULT_OK,intent);

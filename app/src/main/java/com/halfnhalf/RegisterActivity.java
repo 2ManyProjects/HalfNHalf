@@ -17,8 +17,12 @@ import com.backendless.Backendless;
 import com.backendless.BackendlessUser;
 import com.backendless.async.callback.AsyncCallback;
 import com.backendless.exceptions.BackendlessFault;
+import com.backendless.files.BackendlessFile;
 import com.backendless.persistence.DataQueryBuilder;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -119,7 +123,8 @@ public class RegisterActivity extends Activity {
                 msging.put("Received", "");
                 msging.put("allMsgs", "");
                 msging.put("name", name);
-                Backendless.Persistence.of("Messages").save(msging, new AsyncCallback<Map>() {
+                msging.put("userID", user.getObjectId());
+                Backendless.Persistence.of("Messaging").save(msging, new AsyncCallback<Map>() {
                     @Override
                     public void handleResponse(Map msg) {
                         final String id = msg.get("objectId").toString();
@@ -162,6 +167,7 @@ public class RegisterActivity extends Activity {
 
                     }
                 });
+
             }
 
             @Override
