@@ -183,7 +183,6 @@ public class Profile extends AppCompatActivity {
                 public void handleResponse(BackendlessFile response) {
                     final String location = response.getFileURL();
                     Log.i("Location ", location);
-                    Log.i("String value", location.toString());
                     Backendless.Data.of(BackendlessUser.class).findById(Backendless.UserService.CurrentUser().getObjectId(),
                             new AsyncCallback<BackendlessUser>() {
                                 @Override
@@ -226,6 +225,13 @@ public class Profile extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    protected void onResume(){
+        super.onResume();
+//        MainLogin.reloadUserData();
+//        startTimer(1);
     }
 
     @Override
@@ -346,20 +352,23 @@ public class Profile extends AppCompatActivity {
             }
             BufferedReader in = new BufferedReader(new FileReader(localFilename));
             String data = in.readLine();
-            Gson gson = new Gson();
-            Type type = new TypeToken<ArrayList<Store>>(){}.getType();
-            ArrayList<Store> temp = gson.fromJson(data, type);
-            for(int i = 0; i < temp.size(); i++){
-                numStores ++;
-                Profiledataset.add(temp.get(i));
-            }
-            if(x == 0)
-                fromJson = true;
-            File file = new File(localFilename);
-            file.delete();
-            fos.close();
-            is.close();
-            in.close();
+            //if(data.length() > 8) {
+                Gson gson = new Gson();
+                Type type = new TypeToken<ArrayList<Store>>() {
+                }.getType();
+                ArrayList<Store> temp = gson.fromJson(data, type);
+                for (int i = 0; i < temp.size(); i++) {
+                    numStores++;
+                    Profiledataset.add(temp.get(i));
+                }
+                if (x == 0)
+                    fromJson = true;
+                File file = new File(localFilename);
+                file.delete();
+                fos.close();
+                is.close();
+                in.close();
+           // }
         } finally {
             try {
                 if (is != null) {

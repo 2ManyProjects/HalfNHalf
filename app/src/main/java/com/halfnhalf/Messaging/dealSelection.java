@@ -100,6 +100,7 @@ public class dealSelection extends AppCompatActivity {
                 save.setVisible(true);
             }
         }else{
+            save.setVisible(false);
             back.setVisible(true);
         }
         return true;

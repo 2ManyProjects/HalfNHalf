@@ -324,7 +324,7 @@ public class ChatRoomActivity extends AppCompatActivity {
               if (type == 1) {
                   if (sellercompleted) {
                       dealGson.setDealProgression(6);
-                      completed = true;
+//                      completed = true;
                       invalidateOptionsMenu();
                   }else {
                       dealGson.setDealProgression(4);
@@ -418,7 +418,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                 URL url = null;
                 try {
                     url = new URL(p);
-                    String tempData = mContext.getFilesDir() + "/tempData/" + "ChatGson.txt";
+                    String tempData = mContext.getFilesDir() + "/tempData/" + "Gson.txt";
                     downloadFromUrl(url, tempData, t, mContext);
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
@@ -447,51 +447,54 @@ public class ChatRoomActivity extends AppCompatActivity {
             }
             BufferedReader in = new BufferedReader(new FileReader(localFilename));
             String data = in.readLine();
-            Gson gson = new Gson();
-            Type type = new TypeToken<ArrayList<Store>>(){}.getType();
-            ArrayList<Store> temp = gson.fromJson(data, type);
-            File file = new File(localFilename);
-            file.delete();
-            fos.close();
-            is.close();
-            in.close();
-            if(t == 1) {
-                for (int i = 0; i < temp.size(); i++) {
-                    if (temp.get(i).getSeller().equals(seller) &&
-                            temp.get(i).getBuyer().equals(buyer) &&
-                            temp.get(i).getDealProgression() != 6) {
-                        dealGson = temp.get(i);
-                        break;
+            //if(data.length() > 8) {
+                Gson gson = new Gson();
+                Type type = new TypeToken<ArrayList<Store>>() {
+                }.getType();
+                ArrayList<Store> temp = gson.fromJson(data, type);
+                fos.close();
+                is.close();
+                in.close();
+                if (t == 1) {
+                    for (int i = 0; i < temp.size(); i++) {
+                        if (temp.get(i).getSeller().equals(seller) &&
+                                temp.get(i).getBuyer().equals(buyer) &&
+                                temp.get(i).getDealProgression() != 6) {
+                            dealGson = temp.get(i);
+                            break;
+                        }
                     }
-                }
-                locked = (dealGson.getDealProgression() == 1);
-                buyercompleted = (dealGson.getDealProgression() == 4);
-                sellercompleted = (dealGson.getDealProgression() == 5);
-                completed = (dealGson.getDealProgression() == 6);
-                if(completed)
-                    Displayer.alertDisplayer("THIS DEAL IS COMPLETE", "Please start a new one", c);
+                    if (dealGson != null) {
+                        locked = (dealGson.getDealProgression() == 1);
+                        buyercompleted = (dealGson.getDealProgression() == 4);
+                        sellercompleted = (dealGson.getDealProgression() == 5);
+                        completed = (dealGson.getDealProgression() == 6);
+                    }
+                    if (completed)
+                        Displayer.alertDisplayer("THIS DEAL IS COMPLETE", "Please start a new one", c);
 
-                processing = false;
-            }else if(t == 2){
-                sellerGson = temp;
-                for(int i = 0; i < sellerGson.size(); i++){
-                    if(sellerGson.get(i).equals(dealGson)) {
-                        sellerGson.set(i, dealGson);
-                        break;
+                    processing = false;
+                } else if (t == 2) {
+                    sellerGson = temp;
+                    for (int i = 0; i < sellerGson.size(); i++) {
+                        if (sellerGson.get(i).equals(dealGson)) {
+                            sellerGson.set(i, dealGson);
+                            break;
+                        }
                     }
-                }
-                processing = true;
-                downloadFile(buyerlink, 3, c);
-            }else if(t == 3){
-                buyerGson = temp;
-                for(int i = 0; i < buyerGson.size(); i++){
-                    if(buyerGson.get(i).equals(dealGson)) {
-                        buyerGson.set(i, dealGson);
-                        break;
+                    processing = true;
+                    downloadFile(buyerlink, 3, c);
+                } else if (t == 3) {
+                    buyerGson = temp;
+                    for (int i = 0; i < buyerGson.size(); i++) {
+                        if (buyerGson.get(i).equals(dealGson)) {
+                            buyerGson.set(i, dealGson);
+                            break;
+                        }
                     }
+                    processing = false;
                 }
-                processing = false;
-            }
+           // }
         } finally {
             try {
                 if (is != null) {
@@ -548,6 +551,10 @@ public class ChatRoomActivity extends AppCompatActivity {
                     message.setText("[SYSTEM MESSAGE] " + name + " has Undone their Completion");
                     sendMessage();
                 } else if (y == 6) {
+                    if(dealGson.getDealProgression() == 6) {
+                        completed = true;
+                        invalidateOptionsMenu();
+                    }
                     saveGson();
                 }else {
                     invalidateOptionsMenu();
@@ -816,16 +823,11 @@ public class ChatRoomActivity extends AppCompatActivity {
     private void getGson(){
         processing = true;
         startTimer(6);
-        final String w1 = "name = " + "'" + seller + "'";
-        final String w2 = "name = " + "'" + buyer + "'";
         downloadFile(sellerlink, 2, ChatRoomActivity.this);
 
     }
 
   private void saveGson(){
-
-      final String w1 = "name = " + "'" + seller + "'";
-      final String w2 = "name = " + "'" + buyer + "'";
       final String sellergsonData = new Gson().toJson(sellerGson).toString();
       final String buyergsonData = new Gson().toJson(buyerGson).toString();
       Log.e("SELLER DATA", "" + sellergsonData);

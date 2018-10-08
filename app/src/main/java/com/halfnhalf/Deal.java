@@ -51,6 +51,11 @@ public class Deal implements Serializable {
         return currentAmnt;
     }
 
+    public void setCurrentAmnt(String currentAmnt) {
+        this.currentAmnt = currentAmnt;
+    }
+
+
     public boolean getAtCost() {
         return atCost;
     }
@@ -176,9 +181,11 @@ public class Deal implements Serializable {
         this.text = " " + clean(text);
         this.totalAmnt = totalAmnt;
         this.currentAmnt = currentAmnt;
-        if(Integer.parseInt(this.totalAmnt) >= 50)
-            this.limit = false;
-        this.id = UUID.randomUUID().toString();
+        if(Integer.parseInt(this.totalAmnt) >= 50){
+            limit = false;
+            this.currentAmnt = "50";
+        }
+        this.id = id;
         this.reoccuring = reoccuring;
         this.atCost = atCost;
         this.period = period;

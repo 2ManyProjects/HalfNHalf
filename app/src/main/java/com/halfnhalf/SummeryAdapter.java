@@ -145,6 +145,7 @@ public class SummeryAdapter extends RecyclerView.Adapter<SummeryAdapter.MyViewHo
             InputStream is = null;
             FileOutputStream fos = null;
             final storeSummery summery = sum;
+            Log.i("URL", "" + url.toString());
 
             try {
                 URLConnection urlConn = url.openConnection();//connect
@@ -161,22 +162,23 @@ public class SummeryAdapter extends RecyclerView.Adapter<SummeryAdapter.MyViewHo
                 }
                 BufferedReader in = new BufferedReader(new FileReader(localFilename));
                 String data = in.readLine();
-                Gson gson = new Gson();
-                Type type = new TypeToken<ArrayList<Store>>(){}.getType();
-                ArrayList<Store> temp = gson.fromJson(data, type);
-                File file = new File(localFilename);
-                file.delete();
-                fos.close();
-                is.close();
-                in.close();
-                if(t == 0) {
-                    buyingstoreList = temp;
-                    if(checkPassedDeals() == false)
-                        getSellingData();
-                }else if(t == 1) {
-                    sellingstoreList = temp;
-                    getBuyingData();
-                }
+                //if(data.length() > 8) {
+                    Gson gson = new Gson();
+                    Type type = new TypeToken<ArrayList<Store>>() {
+                    }.getType();
+                    ArrayList<Store> temp = gson.fromJson(data, type);
+                    fos.close();
+                    is.close();
+                    in.close();
+                    if (t == 0) {
+                        buyingstoreList = temp;
+                        if (checkPassedDeals() == false)
+                            getSellingData();
+                    } else if (t == 1) {
+                        sellingstoreList = temp;
+                        launch();
+                    }
+                //}
             } finally {
                 try {
                     if (is != null) {
@@ -305,7 +307,6 @@ public class SummeryAdapter extends RecyclerView.Adapter<SummeryAdapter.MyViewHo
                                                                     public void handleResponse(BackendlessFile response) {
                                                                         final String location = response.getFileURL();
                                                                         Log.i("Location ", location);
-                                                                        Log.i("String value", location.toString());
                                                                         saveSeller.put("sellingDataGson", location);
                                                                         Backendless.Persistence.of("Messaging").save( saveSeller, new AsyncCallback<Map>()
                                                                         {

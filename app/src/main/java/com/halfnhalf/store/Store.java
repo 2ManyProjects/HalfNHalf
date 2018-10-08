@@ -3,6 +3,7 @@ package com.halfnhalf.store;
 import com.halfnhalf.Deal;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 public class Store {
 
@@ -88,7 +89,8 @@ public class Store {
 
     public void addDeal(String rate, String txt, String amount, String currentAmnt, boolean atCost, boolean reoccuring, String period, String date) {
         String [] t = date.split("~");
-        Deal temp = new Deal(rate, txt, amount, currentAmnt, atCost, reoccuring, period, t[0], t[1], t[2]);
+        String id = UUID.randomUUID().toString();
+        Deal temp = new Deal(rate, txt, amount, currentAmnt, atCost, reoccuring, period, t[0], t[1], t[2], id);
         storeDeals.add(temp);
     }
 
@@ -99,10 +101,6 @@ public class Store {
             return;
         }
         storeDeals.set(index, temp);
-    }
-
-    public int getDealNum() {
-        return storeDeals.size();
     }
 
     private String fixString(String str){

@@ -41,6 +41,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.UUID;
 
 public class storeDeals extends AppCompatActivity{
 
@@ -217,7 +218,7 @@ public class storeDeals extends AppCompatActivity{
                 android.R.layout.simple_spinner_item, dealTypes);
         final ArrayAdapter<String> periodsadapter = new ArrayAdapter<String>(storeDeals.this,
                 android.R.layout.simple_spinner_item, periods);
-
+        final String identity = UUID.randomUUID().toString();
         AlertDialog.Builder builder = new AlertDialog.Builder(storeDeals.this);
         LayoutInflater inflater = storeDeals.this.getLayoutInflater();
         View view = inflater.inflate(R.layout.activity_add_deal, null);
@@ -390,7 +391,8 @@ public class storeDeals extends AppCompatActivity{
                             periodstr,
                             year,
                             month,
-                            day);
+                            day,
+                            identity);
                 Dealdataset.add(temp);
 
                 int addItemAtListPosition = Dealdataset.size();

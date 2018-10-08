@@ -24,6 +24,7 @@ import com.backendless.Backendless;
 import com.backendless.BackendlessUser;
 import com.backendless.async.callback.AsyncCallback;
 import com.backendless.exceptions.BackendlessFault;
+import com.backendless.files.BackendlessFile;
 import com.backendless.persistence.DataQueryBuilder;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -57,12 +58,18 @@ import java.util.Map;
 public class HomePage extends AppCompatActivity {
 
     private FloatingActionButton profile,  buying, selling;
-
+    private String buyinglink, buyinghistorylink, sellinglink, sellinghistorylink;
+    private String profileData;
     private String storeID;
     private String Userlist;
     private String[] UserIDs;
     private ArrayList<String> userProfiles;
     private ArrayList<Store> userProfilesData;
+    private ArrayList<Store> profilesGsonData;
+    private ArrayList<Store> buyingGsonData;
+    private ArrayList<Store> sellingGsonData;
+    private ArrayList<Store> buyingGsonDataHistory;
+    private ArrayList<Store> sellingGsonDataHistory;
     private ArrayList<storeSummery> stores;
     private File mPath;
     public static String MsgID = "";
@@ -98,6 +105,15 @@ public class HomePage extends AppCompatActivity {
         mServiceIntent = new Intent(getCtx(), mMessages.getClass());
         if (!isMyServiceRunning(mMessages.getClass())) {
             startService(mServiceIntent);
+        }
+
+        if(!new File(HomePage.this.getFilesDir() + "/tempData/" + "Gson.txt").exists()) {
+            File file = new File(HomePage.this.getFilesDir() + "/tempData/" + "Gson.txt");
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         mMessages.setIsloggedIn(true);
         initUI();
@@ -567,9 +583,10 @@ public class HomePage extends AppCompatActivity {
                 });
     }
 
-    public void downloadFile( String path, int i){
+    public void downloadFile( String path, int i, int type){
         final String p = path;
         final int index = i;
+        final int t = type;
         looping = true;
         new Thread(new Runnable() {
             public void run() {
@@ -577,7 +594,7 @@ public class HomePage extends AppCompatActivity {
                 try {
                     url = new URL(p);
                     String tempData = HomePage.this.getFilesDir() + "/tempData/" + "Gson.txt";
-                    downloadFromUrl(url, tempData, index);
+                    downloadFromUrl(url, tempData, index, t);
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
                 } catch (IOException e) {
@@ -586,7 +603,7 @@ public class HomePage extends AppCompatActivity {
             }
         }).start();
     }
-    private void downloadFromUrl(URL url, String localFilename, int i) throws IOException {
+    private void downloadFromUrl(URL url, String localFilename, int i, int t) throws IOException {
         InputStream is = null;
         FileOutputStream fos = null;
 
@@ -605,22 +622,63 @@ public class HomePage extends AppCompatActivity {
             }
             BufferedReader in = new BufferedReader(new FileReader(localFilename));
             String data = in.readLine();
-            Gson gson = new Gson();
-            Type type = new TypeToken<ArrayList<Store>>(){}.getType();
-            ArrayList<Store> temp = gson.fromJson(data, type);
-            File file = new File(localFilename);
-            file.delete();
-            fos.close();
-            is.close();
-            in.close();
-            for(int x = 0; x < temp.size(); x++)
-            {
-                if(temp.get(i).getID().equals(storeID)) {
-                    userProfilesData.add(temp.get(i));
-                    break;
+            //Log.i("DATA", "" + data + " Length: " + data.length());
+            //if(data.length() > 8) {
+                Gson gson = new Gson();
+                Type type = new TypeToken<ArrayList<Store>>() {
+                }.getType();
+                ArrayList<Store> temp = gson.fromJson(data, type);
+                fos.close();
+                is.close();
+                in.close();
+                if (t == 0) {
+                    for (int x = 0; x < temp.size(); x++) {
+                        if (temp.get(i).getID().equals(storeID)) {
+                            userProfilesData.add(temp.get(i));
+                            break;
+                        }
+                    }
+                    looping = false;
+                } else if (t == 1) {
+                    Log.i("Found Buying Link", "" + buyinglink);
+                    buyingGsonData = temp;
+                    if (buyinghistorylink != null) {
+                        downloadFile(buyinghistorylink, 0, 2);
+                    } else if (sellinglink != null) {
+                        downloadFile(sellinglink, 0, 3);
+                    } else if (sellinghistorylink != null) {
+                        downloadFile(sellinghistorylink, 0, 4);
+                    } else {
+                        looping = false;
+                    }
+                } else if (t == 2) {
+                    Log.i("Found BuyingHistory Link", "" + buyinghistorylink);
+                    buyingGsonDataHistory = temp;
+                    if (sellinglink != null) {
+                        downloadFile(sellinglink, 0, 3);
+                    } else if (sellinghistorylink != null) {
+                        downloadFile(sellinghistorylink, 0, 4);
+                    } else {
+                        looping = false;
+                    }
+                } else if (t == 3) {
+                    Log.i("Found Selling Link", "" + sellinglink);
+                    sellingGsonData = temp;
+                    if (sellinghistorylink != null) {
+                        downloadFile(sellinghistorylink, 0, 4);
+                    } else {
+                        looping = false;
+                    }
+                } else if (t == 4) {
+                    Log.i("Found SellingHistory Link", "" + sellinghistorylink);
+                    sellingGsonDataHistory = temp;
+                    looping = false;
+                } else if (t == 5) {
+                    profilesGsonData = temp;
+                    moveShops();
+                    looping = false;
                 }
-            }
-            looping = false;
+           //}
         } finally {
             try {
                 if (is != null) {
@@ -650,8 +708,13 @@ public class HomePage extends AppCompatActivity {
             }, MainLogin.DELAY_TIME);
         }else{
             if(t == 1 && iterator < gsonFiles.size()) {
-                downloadFile(gsonFiles.get(i), i);
+                downloadFile(gsonFiles.get(i), i, 0);
                 startTimer(t, i+1);
+            }else if(t == 2){
+                downloadFile(MainLogin.getUser().getProperty("profile").toString(), 0, 5);
+                startTimer(3, 0);
+            }else if(t == 3){
+//                moveShops();
             }else{
                 for(int v = 0; v < userProfilesData.size(); v++) {
                     Log.i("[" + v + "]", " " + userProfilesData.get(v).toString());
@@ -747,75 +810,247 @@ public class HomePage extends AppCompatActivity {
         }
     }
 
-    private String remakeString(String str){
-        return str.replaceAll("~@", "#");
+    private void moveShops(){
+        boolean buyingcomplete = false;
+        boolean sellingcomplete = false;
+        if(buyingGsonData != null){
+            for(int i = 0; i < buyingGsonData.size(); i++){
+                if(buyingGsonData.get(i).getDealProgression() == 6){
+                    buyingcomplete = true;
+                    break;
+                }
+            }
+        }
+        if(sellingGsonData != null){
+            for(int i = 0; i < sellingGsonData.size(); i++){
+                if(sellingGsonData.get(i).getDealProgression() == 6){
+                    Log.e("AMNT", "" +
+                            sellingGsonData.get(i).getData().get(0).getSelectedAmnt());
+                    sellingcomplete = true;
+                    break;
+                }
+            }
+        }
+        if(buyingcomplete){
+            if(buyingGsonDataHistory == null)
+                buyingGsonDataHistory = new ArrayList<Store>();
+            for(int i = 0; i < buyingGsonData.size(); i++){
+                if(buyingGsonData.get(i).getDealProgression() == 6){
+                    buyingGsonDataHistory.add(buyingGsonData.get(i));
+                    buyingGsonData.remove(i);
+                    i-= 1;
+                }
+            }
+            Log.i("HISTORY Buying", "" + new Gson().toJson(buyingGsonDataHistory).toString());
+            String gsonData = new Gson().toJson(buyingGsonData).toString();
+            saveData(gsonData, 1);
+        }
+
+
+        if(sellingcomplete){//Debug this function, not reaching the center
+            if(sellingGsonDataHistory == null)
+                sellingGsonDataHistory = new ArrayList<Store>();
+            if(profilesGsonData == null)
+                profilesGsonData = new ArrayList<Store>();
+            for(int i = 0; i < sellingGsonData.size(); i++){
+                if(sellingGsonData.get(i).getDealProgression() == 6){
+                    sellingGsonDataHistory.add(sellingGsonData.get(i));
+                    for(int x = 0; x < profilesGsonData.size(); x++){
+                        if(sellingGsonData.get(i).getID().equals(profilesGsonData.get(x).getID())){
+                            for(int y = 0; y < sellingGsonData.get(i).getData().size(); y++){
+                                if(sellingGsonData.get(i).getData().get(y).getSelected() == 1){
+                                    for(int u = 0; u < profilesGsonData.get(x).getData().size(); u++){
+                                        if(sellingGsonData.get(i).getData().get(y).getId().equals(profilesGsonData.get(x).getData().get(u).getId())){
+                                            String currentAmnt = profilesGsonData.get(x).getData().get(u).getCurrentAmnt();
+                                            profilesGsonData.get(x).getData().set(u, sellingGsonData.get(i).getData().get(y));
+                                            Log.e("CHANGED AMNT", "" + currentAmnt + " - " +
+                                                    sellingGsonData.get(i).getData().get(y).getSelectedAmnt());
+                                            profilesGsonData.get(x).getData().get(u).setCurrentAmnt(
+                                                    Integer.toString(
+                                                            Integer.parseInt(currentAmnt) -
+                                                                    sellingGsonData.get(i).getData().get(y).getSelectedAmnt()));
+
+                                            if(Integer.parseInt(profilesGsonData.get(x).getData().get(u).getCurrentAmnt()) < 0)
+                                                profilesGsonData.get(x).getData().get(u).setCurrentAmnt("0");
+                                            profilesGsonData.get(x).getData().get(u).setSelectedAmnt(0);
+                                            profilesGsonData.get(x).getData().get(u).setSelected(0);
+                                            profileData = new Gson().toJson(profilesGsonData).toString();
+
+                                            Log.e("PRINTING DATA", "" + profileData);
+
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    }
+                    sellingGsonData.remove(i);
+                    i-= 1;
+                }
+            }
+            String gsonData = new Gson().toJson(sellingGsonData).toString();
+            Log.i("History Selling Data: ", gsonData);
+            saveData(gsonData, 3);
+        }
     }
 
-    public void completedDeals(){//TODO fix this to work with Gson Files
+    private void saveData(String Data, int type){
+            final int index = type;
+            Log.i("Gson Data: ", Data);
+            try {
+                String path = getFilesDir() + "/tempData/";
+                if(index == 1)
+                    path += "buyingDataGson.txt";
+                else if(index == 2)
+                    path += "buyingDataGsonHistory.txt";
+                else if(index == 3)
+                    path += "sellingDataGson.txt";
+                else if(index == 4)
+                    path += "sellingDataGsonHistory.txt";
+                FileOutputStream writer = new FileOutputStream (path);
+                writer.write(Data.getBytes());
+                writer.close();
+                final File gsonFile = new File(path);
+                path = "/profileData/" + MainLogin.getUser().getObjectId() + "/";
+                Backendless.Files.upload( gsonFile, path, true, new AsyncCallback<BackendlessFile>(){
+                    @Override
+                    public void handleResponse(BackendlessFile response) {
+                        final String location = response.getFileURL();
+                        Log.i("Location ", location);
+                        Backendless.Data.of("Messaging").findById(MsgID, new AsyncCallback<Map>() {
+                            @Override
+                            public void handleResponse(Map response) {
+                                if(index == 1)
+                                    response.put("buyingDataGson", location);
+                                else if(index == 2)
+                                    response.put("buyingDataGsonHistory", location);
+                                else if(index == 3)
+                                    response.put("sellingDataGson", location);
+                                else if(index == 4)
+                                    response.put("sellingDataGsonHistory", location);
+                                Backendless.Persistence.of("Messaging").save( response, new AsyncCallback<Map>()
+                                {
+                                    @Override
+                                    public void handleResponse( Map found)
+                                    {
+                                        gsonFile.delete();
+                                        if(index == 1) {
+                                            String data = new Gson().toJson(buyingGsonDataHistory).toString();
+                                            Log.i("BuyingHistory Data: ", data);
+                                            saveData(data, 2);
+                                        }else if(index == 3) {
+                                            String data = new Gson().toJson(sellingGsonDataHistory).toString();
+                                            Log.i("SellingHistory Data: ", data);
+                                            saveData(data, 4);
+                                        }else if(index == 4)
+                                            saveProfile();
+                                    }
+
+                                    @Override
+                                    public void handleFault( BackendlessFault backendlessFault )
+                                    {
+
+                                    }
+                                }  );
+                            }
+
+                            @Override
+                            public void handleFault(BackendlessFault fault) {
+
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void handleFault(BackendlessFault fault) {
+                        Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+                    }
+                });
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+    }
+    private void saveProfile(){
+//        final String gsonData = new Gson().toJson(profilesGsonData).toString();
+
+        Log.i("CHANGED PROFILE DATA ", "" + profileData);
+        try {
+            String path = getFilesDir() + "/tempData/" + MainLogin.getUser().getObjectId() + ".txt";
+            FileOutputStream writer = new FileOutputStream (path);
+            writer.write(profileData.getBytes());
+            writer.close();
+            final File gsonFile = new File(path);
+            Log.i("File Closed ", "File Stuff");
+            Backendless.Files.upload( gsonFile, "/profileData/" + MainLogin.getUser().getObjectId(), true, new AsyncCallback<BackendlessFile>(){
+                @Override
+                public void handleResponse(BackendlessFile response) {
+                    final String location = response.getFileURL();
+                    Log.i("Location ", location);
+                    Backendless.Data.of(BackendlessUser.class).findById(Backendless.UserService.CurrentUser().getObjectId(),
+                            new AsyncCallback<BackendlessUser>() {
+                                @Override
+                                public void handleResponse(BackendlessUser foundUser) {
+                                    foundUser.setProperty("profile", location);
+                                    Backendless.UserService.update( foundUser, new AsyncCallback<BackendlessUser>()
+                                    {
+                                        @Override
+                                        public void handleResponse( BackendlessUser backendlessUser )
+                                        {
+                                            gsonFile.delete();
+                                        }
+
+                                        @Override
+                                        public void handleFault( BackendlessFault backendlessFault )
+                                        {
+
+                                        }
+                                    }  );
+                                }
+
+                                @Override
+                                public void handleFault(BackendlessFault fault) {
+                                    Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+                                }
+                            });
+                }
+
+                @Override
+                public void handleFault(BackendlessFault fault) {
+                    Log.e("TOKEN ISSUE: ", "" + fault.getMessage());
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void completedDeals(){
         Backendless.Data.of("Messaging").findById(MsgID, new AsyncCallback<Map>() {
             @Override
             public void handleResponse(Map response) {
                 String buyingData = "";
                 String sellingData = "";
                 int changed = 0;
-                if(response.get("buyingData") != null) {
-                    if(buyingData.length() > 5){
-                        Log.e("BUYINGDAT ", " STARTED");
-                        if(buyingData.contains("6#" + Backendless.UserService.CurrentUser().getProperty("name").toString() + "#")) {
-                            String[] data = buyingData.split("#");
-                            String index = getnewIndex(data,  Backendless.UserService.CurrentUser().getProperty("name").toString(), 0);
-                            if(!index.equals("-1")){
-                                int [] indexData = { Integer.parseInt(index.split("#")[0]) ,Integer.parseInt(index.split("#")[1]) };
-                                int length = Integer.parseInt(data[indexData[0] + 3]);
-                                int startLength = indexData[1];
-                                String dataToMove = buyingData.substring(startLength, length + startLength);
-                                buyingData = buyingData.replace(dataToMove, "");
-                                if(response.get("buyingHistory") != null)
-                                    if(response.get("buyingHistory").toString().length() > 5)
-                                        dataToMove = response.get("buyingHistory").toString() + dataToMove;
-                                response.put("buyingData", buyingData);
-                                response.put("buyingHistory", dataToMove);
-                                changed = 1;
-                            }
-                        }
-                    }
+                if(response.get("buyingDataGson") != null){
+                    buyinglink = response.get("buyingDataGson").toString();
                 }
-                if(response.get("sellingData") != null) {
-                    if(sellingData.length() > 5){
-                        if(sellingData.contains("6#")) {
-                            String[] data = sellingData.split("#");
-                            String index = getnewIndex(data,  Backendless.UserService.CurrentUser().getProperty("name").toString(), 1);
-                            if(!index.equals("-1")){
-                                int [] indexData = { Integer.parseInt(index.split("#")[0]) ,Integer.parseInt(index.split("#")[1]) };
-                                int length = Integer.parseInt(data[indexData[0] + 3]);
-                                int startLength = indexData[1];
-                                String dataToMove = sellingData.substring(startLength, length + startLength);
-                                sellingData = sellingData.replace(dataToMove, "");
-                                if(response.get("sellingHistory") != null)
-                                    if(response.get("sellingHistory").toString().length() > 5)
-                                        dataToMove = response.get("sellingHistory").toString() + dataToMove;
-                                response.put("sellingData", sellingData);
-                                response.put("sellingHistory", dataToMove);
-                                changed = 2;
-                            }
-                        }
-                    }
+                if(response.get("buyingDataGsonHistory") != null){
+                    buyinghistorylink = response.get("buyingDataGsonHistory").toString();
                 }
-
-                if(changed > 0){
-                    processing = true;
-                    Backendless.Data.of("Messaging").save(response, new AsyncCallback<Map>() {
-                        @Override
-                        public void handleResponse(Map response) {
-                            processing = false;
-                            completedDeals();
-                        }
-
-                        @Override
-                        public void handleFault(BackendlessFault fault) {
-                            processing = false;
-                        }
-                    });
+                if(response.get("sellingDataGson") != null){
+                    sellinglink = response.get("sellingDataGson").toString();
+                }
+                if(response.get("sellingDataGsonHistory") != null){
+                    sellinghistorylink = response.get("sellingDataGsonHistory").toString();
+                }
+                if(buyinglink != null) {
+                    downloadFile(buyinglink, 0, 1);
+                    startTimer(2, 0);
+                }else if(sellinglink != null) {
+                    downloadFile(sellinglink, 0, 2);
+                    startTimer(2, 0);
                 }
             }
 
@@ -826,25 +1061,6 @@ public class HomePage extends AppCompatActivity {
         });
     }
 
-    private String getnewIndex(String [] data, String compare, int type){
-        int length = 0;
-        int typeLength = 1;
-        if(type == 0)
-            typeLength = 1;
-        else if(type == 1)
-            typeLength = 2;
-
-        for (int i = 0; i < data.length; i++) {
-            if (data[i].equals("6") && i + 2 < data.length) {
-                Log.e("INDEX TESTING", " Name: " + data[i + typeLength] + " Name: " + compare );
-                if (data[i + typeLength].equals(compare)) {
-                    return Integer.toString(i) + "#" + Integer.toString(length);
-                }
-            }
-            length+= data[i].length() + 1;
-        }
-        return "-1";
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
