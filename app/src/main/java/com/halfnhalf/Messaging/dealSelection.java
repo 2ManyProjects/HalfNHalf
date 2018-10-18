@@ -75,7 +75,7 @@ public class dealSelection extends AppCompatActivity {
         setSupportActionBar(myToolbar);
     }
 
-    private void init(){
+    private void init(){ 
         for(int i = 0; i < storeData.getData().size(); i++){
             Deal temp = storeData.getData().get(i);
 

@@ -168,6 +168,8 @@ public class Profile extends AppCompatActivity {
     private void saveProfile(int type){
         final int t = type;
         final String temp = createProfile();
+        for(int i = 0; i < Profiledataset.size(); i++)
+            Profiledataset.get(i).setSeller(MainLogin.getUser().getProperty("name").toString());
         final String gsonData = new Gson().toJson(Profiledataset).toString();
 
         Log.i("Gson Data: ", gsonData);
@@ -177,7 +179,6 @@ public class Profile extends AppCompatActivity {
             writer.write(gsonData.getBytes());
             writer.close();
             final File gsonFile = new File(path);
-            Log.i("File Closed ", "File Stuff");
             Backendless.Files.upload( gsonFile, "/profileData/" + MainLogin.getUser().getObjectId(), true, new AsyncCallback<BackendlessFile>(){
                 @Override
                 public void handleResponse(BackendlessFile response) {
@@ -359,6 +360,7 @@ public class Profile extends AppCompatActivity {
                 ArrayList<Store> temp = gson.fromJson(data, type);
                 for (int i = 0; i < temp.size(); i++) {
                     numStores++;
+                    temp.get(i).setSeller(MainLogin.getUser().getProperty("name").toString());
                     Profiledataset.add(temp.get(i));
                 }
                 if (x == 0)
@@ -518,15 +520,6 @@ public class Profile extends AppCompatActivity {
             removed.clear();
         }
 
-    }
-
-
-    private String fixString(String str){
-        return str.replaceAll("#", "~@");
-    }
-
-    private String remakeString(String str){
-        return str.replaceAll("~@", "#");
     }
 
     private void fillStore(ArrayList<Deal> dealData, String id, ArrayList<String> removed){

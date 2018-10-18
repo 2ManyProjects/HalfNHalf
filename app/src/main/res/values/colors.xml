@@ -4,6 +4,7 @@
     <color name="colorPrimaryDark">#FF8800</color>
     <color name="colorAccent">#FF4081</color>
     <color name="colorWarning">#ec0000</color>
+    <color name="colorSystem">#00eca5</color>
     <color name="colorUser">#ec9500</color>
     <color name="row_activated">#e0e0e0</color>
 </resources>

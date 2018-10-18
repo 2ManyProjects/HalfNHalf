@@ -335,6 +335,7 @@ public class FindStore extends AppCompatActivity {
                 finish();
             }else if(type == 1){
                 Intent intent = new Intent(context, HomePage.class);
+                Log.e("STOREID: ", "" + mCurrentStore.id);
                 intent.putExtra("StoreID", mCurrentStore.id);
                 setResult(RESULT_OK, intent);
                 finish();

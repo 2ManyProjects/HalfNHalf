@@ -88,6 +88,8 @@ public class StartChatActivity extends AppCompatActivity{
       }else if(type == 2) {
           allMessages = HomePage.sellingMessages;
       }
+      populateDataAndSetAdapter();
+      mAdapter.notifyDataSetChanged();
       HomePage.getNewMsgs(false, StartChatActivity.this, 0);
       startTimer();
     registerReceiver(receiver, new IntentFilter(

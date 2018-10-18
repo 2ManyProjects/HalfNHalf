@@ -76,7 +76,7 @@ public class ChatRoomActivity extends AppCompatActivity {
   private static String sellerlink, buyerlink, selleruploadlink, buyeruploadlink;
   public static Store dealGson;
   public static ArrayList<Store> buyerGson, sellerGson;
-  //TODO update the Gson Files with changed deals, and Migrate the base data from snapshot to Gson
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -122,7 +122,7 @@ public class ChatRoomActivity extends AppCompatActivity {
     messagesView = (ListView) findViewById(R.id.messages_view);
     messagesView.setAdapter(messageAdapter);
 
-    data = new MemberData( name, receiving);
+    data = new MemberData(name, receiving);
 
     populateChat();
     message.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -132,7 +132,7 @@ public class ChatRoomActivity extends AppCompatActivity {
 
         if ( actionId == EditorInfo.IME_ACTION_SEND || event.getKeyCode() == KeyEvent.KEYCODE_ENTER ) {
           if(v.getText().toString().length() > 0)
-            sendMessage();
+            sendMessage(false);
           handled = true;
         }
 
@@ -140,7 +140,7 @@ public class ChatRoomActivity extends AppCompatActivity {
       }
     });
     if(firstContact){
-        sendMessage();
+        sendMessage(false);
     }
       getData(ChatRoomActivity.this);
       startTimer(0);
@@ -324,7 +324,6 @@ public class ChatRoomActivity extends AppCompatActivity {
               if (type == 1) {
                   if (sellercompleted) {
                       dealGson.setDealProgression(6);
-//                      completed = true;
                       invalidateOptionsMenu();
                   }else {
                       dealGson.setDealProgression(4);
@@ -528,28 +527,28 @@ public class ChatRoomActivity extends AppCompatActivity {
                 } else if (y == 1) {
                     Displayer.setSnackBar(findViewById(R.id.messages_view), "You've locked this Deal");
                     invalidateOptionsMenu();
-                    message.setText("[SYSTEM MESSAGE] " + name + " has locked the deal");
-                    sendMessage();
+                    message.setText(name + " has locked the deal");
+                    sendMessage(true);
                 } else if (y == 2) {
                     Displayer.setSnackBar(findViewById(R.id.messages_view), "You've unlocked this Deal");
                     invalidateOptionsMenu();
-                    message.setText("[SYSTEM MESSAGE] " + name + " has unlocked the deal");
-                    sendMessage();
+                    message.setText(name + " has unlocked the deal");
+                    sendMessage(true);
                 } else if (y == 3) {
                     Displayer.setSnackBar(findViewById(R.id.messages_view), "You've modified this Deal");
                     invalidateOptionsMenu();
-                    message.setText("[SYSTEM MESSAGE] " + name + " has modified the deal");
-                    sendMessage();
+                    message.setText(name + " has modified the deal");
+                    sendMessage(true);
                 } else if (y == 4) {
                     Displayer.setSnackBar(findViewById(R.id.messages_view), "You've Completed this Deal");
                     invalidateOptionsMenu();
-                    message.setText("[SYSTEM MESSAGE] " + name + " has Completed the deal");
-                    sendMessage();
+                    message.setText(name + " has Completed the deal");
+                    sendMessage(true);
                 } else if (y == 5) {
                     Displayer.setSnackBar(findViewById(R.id.messages_view), "You've undone your Completion");
                     invalidateOptionsMenu();
-                    message.setText("[SYSTEM MESSAGE] " + name + " has Undone their Completion");
-                    sendMessage();
+                    message.setText(name + " has Undone their Completion");
+                    sendMessage(true);
                 } else if (y == 6) {
                     if(dealGson.getDealProgression() == 6) {
                         completed = true;
@@ -572,9 +571,9 @@ public class ChatRoomActivity extends AppCompatActivity {
       temp.setData( msgs.get(i).getData());
       temp.setBelongsToCurrentUser(belongsToCurrentUser);
       messageAdapter.add(temp);
-      messageAdapter.push();
-      messagesView.setSelection(messagesView.getCount() - 1);
     }
+        messageAdapter.push();
+        messagesView.setSelection(messagesView.getCount() - 1);
   }
 
     private void remakeChat(){
@@ -586,9 +585,10 @@ public class ChatRoomActivity extends AppCompatActivity {
             temp.setData( msgs.get(i).getData());
             temp.setBelongsToCurrentUser(belongsToCurrentUser);
             messageAdapter.add(temp);
-            messagesView.setSelection(messagesView.getCount() - 1);
         }
-      messageAdapter.push();
+        //messageAdapter.newSet(msgs);
+        messageAdapter.push();
+        messagesView.setSelection(messagesView.getCount() - 1);
     }
 
 
@@ -599,7 +599,6 @@ public class ChatRoomActivity extends AppCompatActivity {
             Log.e("INCOMMING MSG", "");
             HomePage.getNewMsgs(false, ChatRoomActivity.this, type);
             getData(ChatRoomActivity.this);
-            startTimer(50);
             displayNewMsgs();
         }
     };
@@ -619,7 +618,7 @@ public class ChatRoomActivity extends AppCompatActivity {
             }else if(type == 2) {
                 msgs = HomePage.sellingMessages.get(index);
             }
-            Log.i("Last Msg", "" + msgs.get(msgs.size()-1).toString());
+            invalidateOptionsMenu();
             remakeChat();
         }
     }
@@ -654,11 +653,14 @@ public class ChatRoomActivity extends AppCompatActivity {
   //Image Button was pressed
   public void sendMessage(View view) {
       if(message.getText().toString().length() > 0)
-          sendMessage();
+          sendMessage(false);
   }
 
   //Enter was pressed
-  public void sendMessage() {
+  public void sendMessage(boolean System) {
+      final Gson gson = new Gson();
+      final Type dataType = new TypeToken<ArrayList<Message>>() {
+      }.getType();
       String m = "";
         if(!firstContact) {
             m = message.getText().toString();
@@ -666,46 +668,58 @@ public class ChatRoomActivity extends AppCompatActivity {
             m = "Hi, I'm interested in . . .";
             firstContact = false;
         }
-    if(m.contains("#"))
-        m.replaceAll("#", "~@");
     final Message temp = new Message();
     temp.setText(m);
     temp.setData(data);
     temp.setBelongsToCurrentUser(true);
+    temp.getData().setSystem(System);
     messageAdapter.add(temp);
     messagesView.setSelection(messagesView.getCount() - 1);
-
-    final String saveData = temp.toString();
+    final ArrayList<Message> msg = new ArrayList<Message>();
     final String otherUser = temp.getData().getReceiver();
     String path = "";
-      if(type == 0) {
-          path = getFilesDir() + "/messages/" + "allMsgs";
-      }else if(type == 1) {
+      if(type == 1) {
           path = getFilesDir() + "/messages/" + "buyingMsgs";
       }else if(type == 2) {
           path = getFilesDir() + "/messages/" + "sellingMsgs";
       }
     try {
-      BufferedWriter out = new BufferedWriter(new FileWriter(path));
-      out.append(saveData);
-      out.close();
+        BufferedReader in = new BufferedReader(new FileReader(path));
+        String data = in.readLine();
+        if(data != null && data.length() > 6) {
+            Log.e("DATA", "" + data + " Length: " + data.length());
+            //if(data.length() > 8) {
+            ArrayList<Message> t = gson.fromJson(data, dataType);
+            for (int i = 0; i < t.size(); i++) {
+                msg.add(t.get(i));
+            }
+        }
+        in.close();
     } catch (IOException e) {
       e.printStackTrace();
     }
-    col = "";
+    msg.add(temp);
+      try {
+          BufferedWriter out = new BufferedWriter(new FileWriter(path));
+          out.write(new Gson().toJson(msg).toString());
+          out.close();
+      } catch (IOException e) {
+          e.printStackTrace();
+      }
+      col = "";
       if(type == 1) {
           col = "sellingReceived";
           if(HomePage.buyingMsgs == null){
-              HomePage.buyingMsgs = saveData;
+              HomePage.buyingMsgs = msg;
           }else {
-              HomePage.buyingMsgs += saveData;
+              HomePage.buyingMsgs.add(temp);
           }
       }else if(type == 2) {
           col = "buyingReceived";
           if(HomePage.sellingMsgs == null){
-              HomePage.sellingMsgs = saveData;
+              HomePage.sellingMsgs = msg;
           }else {
-              HomePage.sellingMsgs += saveData;
+              HomePage.sellingMsgs.add(temp);
           }
       }
 
@@ -717,11 +731,17 @@ public class ChatRoomActivity extends AppCompatActivity {
                   @Override
                   public void handleResponse( List<Map> response )
                   {
-                      String temp = "";
-                      if(response.get(0).get(col) != null){
-                          temp = response.get(0).get(col).toString();
+                      String str = "";
+                      ArrayList<Message> pastMsgs = new ArrayList<Message>();
+                      if(response.get(0).get(col) != null && !response.get(0).get(col).equals("")){
+
+                          str = response.get(0).get(col).toString();
+                          Log.e("STR", "" + str);
+                          Gson json = new Gson();
+                          pastMsgs = json.fromJson(str, dataType);
                       }
-                      final String sendMsgs = temp + saveData;
+                      pastMsgs.add(temp);
+                      final String sendMsgs = new Gson().toJson(pastMsgs).toString();
                       response.get(0).put(col, sendMsgs);
                       Backendless.Persistence.of("Messaging").save(response.get(0), new AsyncCallback<Map>() {
                           @Override
@@ -747,12 +767,12 @@ public class ChatRoomActivity extends AppCompatActivity {
               public void handleResponse( Map response )
               {
                   if(type == 1) {
-                      if(HomePage.buyingMsgs.length() > 6) {
-                          response.put("buyingMsgs", HomePage.buyingMsgs);
+                      if(HomePage.buyingMsgs != null && HomePage.buyingMsgs.size() > 0) {
+                          response.put("buyingMsgs", new Gson().toJson(HomePage.buyingMsgs).toString());
                       }
                   }else if(type == 2) {
-                      if(HomePage.sellingMsgs.length() > 6) {
-                          response.put("sellingMsgs", HomePage.sellingMsgs);
+                      if(HomePage.sellingMsgs != null && HomePage.sellingMsgs.size() > 0) {
+                          response.put("sellingMsgs", new Gson().toJson(HomePage.sellingMsgs).toString());
                       }
                   }
                   Backendless.Persistence.of("Messaging").save(response, new AsyncCallback<Map>() {

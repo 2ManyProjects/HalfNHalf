@@ -25,16 +25,9 @@ public class Message {
     }
 
     public String getText() {
-        return rebuildText(text);
+        return text;
     }
 
-    private String cleanText(String t){
-        return t.replaceAll("#", "$^");
-    }
-
-    private String rebuildText(String t){
-        return t.replaceAll("$^", "#");
-    }
 
     public MemberData getData() {
         return data;
@@ -46,6 +39,6 @@ public class Message {
 
     @Override
     public String toString(){
-        return data.toString() + "#" +  cleanText(text) + "#";
+        return data.toString() + "#" +  text + "#";
     }
 }

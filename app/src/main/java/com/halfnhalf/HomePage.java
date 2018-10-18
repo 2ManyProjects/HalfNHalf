@@ -73,8 +73,8 @@ public class HomePage extends AppCompatActivity {
     private ArrayList<storeSummery> stores;
     private File mPath;
     public static String MsgID = "";
-    public static String sellingMsgs = "";
-    public static String buyingMsgs = "";
+    public static ArrayList<Message> sellingMsgs;
+    public static ArrayList<Message> buyingMsgs;
     public static ArrayList<ArrayList<Message>> sellingMessages;
     public static ArrayList<ArrayList<Message>> buyingMessages;
 
@@ -90,11 +90,10 @@ public class HomePage extends AppCompatActivity {
     private Intent mServiceIntent;
     Context ctx;
 
+    //TODO Toys R Us name is screwed up when saving
 
     EditText editText;
     Button button;
-    //TODO: If there is a Completed Deal in the Buying or SellingData Move the deal over to BuyingHistory (Or selling History) as needed and update the Deal on the Sellers Profile
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -150,19 +149,27 @@ public class HomePage extends AppCompatActivity {
             try {
                 BufferedReader in = new BufferedReader(new FileReader(path));
                 inputString = in.readLine();
-            } catch (IOException e) {
 
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            sellingMsgs = inputString;
+            Log.e("STRING SELL", "" + inputString);
+            Gson gson = new Gson();
+            Type type = new TypeToken<ArrayList<Message>>() {
+            }.getType();
+            if(inputString != null && inputString.length() > 6)
+                sellingMsgs = gson.fromJson(inputString, type);
             inputString = "";
             path = getFilesDir() + "/messages/" + "buyingMsgs";
             try {
                 BufferedReader in = new BufferedReader(new FileReader(path));
                 inputString = in.readLine();
             } catch (IOException e) {
-
+                e.printStackTrace();
             }
-            buyingMsgs = inputString;
+            Log.e("STRING ", "" + inputString);
+            if(inputString != null && inputString.length() > 6)
+                buyingMsgs = gson.fromJson(inputString, type);
             getNewMsgs(false, HomePage.this, 0);
         }
 
@@ -247,7 +254,6 @@ public class HomePage extends AppCompatActivity {
         stopService(mServiceIntent);
         Log.i("HomePage ", "onDestroy!");
         super.onDestroy();
-
     }
 
     @Override
@@ -274,22 +280,45 @@ public class HomePage extends AppCompatActivity {
     }
 
     private void getMsgs(){
+        final Gson gson = new Gson();
+        final Type type = new TypeToken<ArrayList<Message>>() {
+        }.getType();
         Backendless.Data.of("Messaging").findById(MsgID,
                 new AsyncCallback<Map>() {
                     @Override
                     public void handleResponse( Map response )
                     {
-                        if(response.get("buyingMsgs") != null) {
-                            buyingMsgs = response.get("buyingMsgs").toString();
-                        }else {
-                            buyingMsgs = "";
-                        }
-                        if(response.get("sellingMsgs") != null) {
-                            sellingMsgs = response.get("sellingMsgs").toString();
-                        }else {
-                            sellingMsgs = "";
-                        }
-                        String path = getFilesDir() + "/messages/" + "LastLogin";
+//                        if(response.get("buyingMsgs") != null) {
+//                            String str = response.get("buyingMsgs").toString();
+//                            buyingMsgs = gson.fromJson(str, type);
+//                            Log.e("MESSAGES", "" + str);
+                            String path = getFilesDir() + "/messages/" + "buyingMsgs";
+                            try {
+                                BufferedWriter out = new BufferedWriter(new FileWriter(path));
+                                out.write("");
+                                out.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+//                        }else {
+//                            buyingMsgs = new ArrayList<Message>();
+//                        }
+//                        if(response.get("sellingMsgs") != null) {
+//                            String str = response.get("sellingMsgs").toString();
+//                            sellingMsgs = gson.fromJson(str, type);
+//                            Log.e("MESSAGES", "" + str);
+                            path = getFilesDir() + "/messages/" + "sellingMsgs";
+                            try {
+                                BufferedWriter out = new BufferedWriter(new FileWriter(path));
+                                out.write("");
+                                out.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+//                        }else {
+//                            sellingMsgs = new ArrayList<Message>();
+//                        }
+                        path = getFilesDir() + "/messages/" + "LastLogin";
                         try {
                             BufferedWriter out = new BufferedWriter(new FileWriter(path));
                             out.write(Backendless.UserService.CurrentUser().getProperty("name").toString());
@@ -308,6 +337,9 @@ public class HomePage extends AppCompatActivity {
     }
 
     public static void getNewMsgs(boolean launch, Context c, int type){
+        final Gson gson = new Gson();
+        final Type primitive = new TypeToken<ArrayList<Message>>() {
+        }.getType();
         processing = true;
         final boolean tolaunch = launch;
         final Context context = c;
@@ -317,17 +349,20 @@ public class HomePage extends AppCompatActivity {
                     @Override
                     public void handleResponse( Map response )
                     {
-                        if(response.get("buyingReceived") != null) {
+                        if(response.get("buyingReceived") != null && !response.get("buyingReceived").equals("")) {
 
                             if(buyingMsgs == null){
-                                buyingMsgs = response.get("buyingReceived").toString();
+                                buyingMsgs = gson.fromJson(response.get("buyingReceived").toString(), primitive);
                             }else {
-                                buyingMsgs += response.get("buyingReceived").toString();
+                                ArrayList<Message> temp = gson.fromJson(response.get("buyingReceived").toString(), primitive);
+
+                                for(int i = 0; i < temp.size(); i++)
+                                    buyingMsgs.add(temp.get(i));
                             }
                             String path = context.getFilesDir() + "/messages/" + "buyingMsgs";
                             try {
                                 BufferedWriter out = new BufferedWriter(new FileWriter(path));
-                                out.write(buyingMsgs);
+                                out.write(new Gson().toJson(buyingMsgs).toString());
                                 out.close();
                             } catch (IOException e) {
                                 e.printStackTrace();
@@ -335,27 +370,28 @@ public class HomePage extends AppCompatActivity {
 
                         }
 
-                        if(response.get("sellingReceived") != null) {
+                        if(response.get("sellingReceived") != null && !response.get("sellingReceived").equals("")) {
 
                             if(sellingMsgs == null){
-                                sellingMsgs = response.get("sellingReceived").toString();
+                                sellingMsgs = gson.fromJson(response.get("sellingReceived").toString(), primitive);
                             }else {
-                                sellingMsgs += response.get("sellingReceived").toString();
+                                ArrayList<Message> temp = gson.fromJson(response.get("sellingReceived").toString(), primitive);
+                                for(int i = 0; i < temp.size(); i++)
+                                    sellingMsgs.add(temp.get(i));
                             }
                             String path = context.getFilesDir() + "/messages/" + "sellingMsgs";
                             try {
                                 BufferedWriter out = new BufferedWriter(new FileWriter(path));
-                                out.write(sellingMsgs);
+                                out.write(new Gson().toJson(sellingMsgs).toString());
                                 out.close();
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
-
                         }
-                        if(sellingMsgs.length() > 6)
-                            response.put("sellingMsgs", sellingMsgs);
-                        if(buyingMsgs.length() > 6)
-                            response.put("buyingMsgs", buyingMsgs);
+//                        if(sellingMsgs != null && sellingMsgs.size() > 0)
+//                            response.put("sellingMsgs", new Gson().toJson(sellingMsgs).toString());
+//                        if(buyingMsgs != null && buyingMsgs.size() > 0)
+//                            response.put("buyingMsgs", new Gson().toJson(buyingMsgs).toString());
 
 
                         if(buyingMsgs != null) {
@@ -364,8 +400,6 @@ public class HomePage extends AppCompatActivity {
                         if(sellingMsgs != null) {
                             buildMessages(sellingMsgs, 2);
                         }
-
-                        response.put("Received", "");
                         response.put("buyingReceived", "");
                         response.put("sellingReceived", "");
                         Backendless.Persistence.of("Messaging").save( response, new AsyncCallback<Map>() {
@@ -403,29 +437,23 @@ public class HomePage extends AppCompatActivity {
     public void deleteRecursive(File Directory) {
 
         if (Directory.isDirectory()) {
-            for(int i = 0; i < Directory.listFiles().length; i++){
-                File child = Directory.listFiles()[i];
+            for (File child : Directory.listFiles())
                 deleteRecursive(child);
-            }
         }
         Directory.delete();
     }
 
-    private static void buildMessages(String data, int type){
-        if(data.length() > 6) {
+    private static void buildMessages(ArrayList<Message> data, int type){
+        if(data.size() > 0) {
             if(type == 1){
                 buyingMessages.clear();
             }else{
                 sellingMessages.clear();
             }
-            String[] MessageData = data.split("#");
-            for (int i = 0; i < MessageData.length; i++) {
+            for (int i = 0; i < data.size(); i++) {
 //            Log.i("Message Data: ", "" + MessageData[i] + " " +  MessageData[i + 1] + " " +  MessageData[i + 2]);
-                Message temp = new Message();
-                temp.setData(MessageData[i], MessageData[i + 1]);
-
-                temp.setText(MessageData[i + 2].replaceAll("~@", "#"));
-                temp.setBelongsToCurrentUser(Backendless.UserService.CurrentUser().getProperty("name").toString().equals(MessageData[i]));
+                Message temp = data.get(i);
+                temp.setBelongsToCurrentUser(MainLogin.getUser().getProperty("name").toString().equals(data.get(i).getData().getSender()));
                 if (i == 0) {
                     ArrayList<Message> tempMessage = new ArrayList<>();
                     tempMessage.add(temp);
@@ -453,15 +481,12 @@ public class HomePage extends AppCompatActivity {
                         }
                     }
                 }
-                i += 2;
             }
-
-
         }
     }
 
     public static int getIndexofMessage(String sender, String receiver, int type){
-        String name = Backendless.UserService.CurrentUser().getProperty("name").toString();
+        String name = MainLogin.getUser().getProperty("name").toString();
 //        Log.i(Messages.size() + " Name:" + name, "Sender: " + sender + " Receiver: " + receiver);
         int size = 0;
         if(type == 1){
@@ -472,20 +497,24 @@ public class HomePage extends AppCompatActivity {
         if(sender.equals(name)){
             for(int i = 0; i < size; i++){
                 if(type == 1){
-                    if (buyingMessages.get(i).get(0).getData().getReceiver().equals(receiver) || buyingMessages.get(i).get(0).getData().getSender().equals(receiver))
+                    if (buyingMessages.get(i).get(0).getData().getReceiver().equals(receiver) ||
+                            buyingMessages.get(i).get(0).getData().getSender().equals(receiver))
                         return i;
                 }else{
-                    if (sellingMessages.get(i).get(0).getData().getReceiver().equals(receiver) || sellingMessages.get(i).get(0).getData().getSender().equals(receiver))
+                    if (sellingMessages.get(i).get(0).getData().getReceiver().equals(receiver) ||
+                            sellingMessages.get(i).get(0).getData().getSender().equals(receiver))
                         return i;
                 }
             }
         }else{
             for(int i = 0; i < size; i++){
                 if(type == 1){
-                    if (buyingMessages.get(i).get(0).getData().getSender().equals(sender) || buyingMessages.get(i).get(0).getData().getReceiver().equals(sender))
+                    if (buyingMessages.get(i).get(0).getData().getSender().equals(sender) ||
+                            buyingMessages.get(i).get(0).getData().getReceiver().equals(sender))
                         return i;
                 }else{
-                    if (sellingMessages.get(i).get(0).getData().getSender().equals(sender) || sellingMessages.get(i).get(0).getData().getReceiver().equals(sender))
+                    if (sellingMessages.get(i).get(0).getData().getSender().equals(sender) ||
+                            sellingMessages.get(i).get(0).getData().getReceiver().equals(sender))
                         return i;
                 }
             }
@@ -555,6 +584,8 @@ public class HomePage extends AppCompatActivity {
                 userProfiles = new ArrayList<>();
                 userProfiles.clear();
                 stores.clear();
+                gsonFiles.clear();
+                userProfilesData = new ArrayList<Store>();
                 Summeryadapter.notifyDataSetChanged();
                 findData(storeID);
             }
@@ -568,9 +599,9 @@ public class HomePage extends AppCompatActivity {
         Backendless.Data.of("Stores").find(dataQuery,
                 new AsyncCallback<List<Map>>() {
                     @Override
-                    public void handleResponse(List<Map> foundUsers) {
-                        if (foundUsers.size() >= 0) {
-                            Userlist = foundUsers.get(0).get("UserList").toString();
+                    public void handleResponse(List<Map> foundStores) {
+                        if (foundStores.size() >= 0) {
+                            Userlist = foundStores.get(0).get("UserList").toString();
                             UserIDs = Userlist.split("#");
                             getUserProfiles(UserIDs, 0);
                         }
@@ -615,30 +646,29 @@ public class HomePage extends AppCompatActivity {
 
             byte[] buffer = new byte[4096];              //declare 4KB buffer
             int len;
-
-            //while we have availble data, continue downloading and storing to local file
             while ((len = is.read(buffer)) > 0) {
                 fos.write(buffer, 0, len);
             }
             BufferedReader in = new BufferedReader(new FileReader(localFilename));
             String data = in.readLine();
-            //Log.i("DATA", "" + data + " Length: " + data.length());
-            //if(data.length() > 8) {
                 Gson gson = new Gson();
                 Type type = new TypeToken<ArrayList<Store>>() {
                 }.getType();
+                if(data == null || data.equals("[]"))
+                    data = new Gson().toJson(new ArrayList<Store>()).toString();
                 ArrayList<Store> temp = gson.fromJson(data, type);
                 fos.close();
                 is.close();
                 in.close();
                 if (t == 0) {
                     for (int x = 0; x < temp.size(); x++) {
-                        if (temp.get(i).getID().equals(storeID)) {
-                            userProfilesData.add(temp.get(i));
+                        if (temp.get(x).getID().equals(storeID)) {
+                            userProfilesData.add(temp.get(x));
+//                            Log.e("BREAK: ", userProfilesData.get(0).toString());
+                            looping = false;
                             break;
                         }
                     }
-                    looping = false;
                 } else if (t == 1) {
                     Log.i("Found Buying Link", "" + buyinglink);
                     buyingGsonData = temp;
@@ -708,6 +738,7 @@ public class HomePage extends AppCompatActivity {
             }, MainLogin.DELAY_TIME);
         }else{
             if(t == 1 && iterator < gsonFiles.size()) {
+//                Log.e("File" + gsonFiles.get(i), " ind " + i);
                 downloadFile(gsonFiles.get(i), i, 0);
                 startTimer(t, i+1);
             }else if(t == 2){
@@ -767,18 +798,13 @@ public class HomePage extends AppCompatActivity {
         processing = true;
         final String [] userID = id;
         final int i = x;
-        if(x == 0 && userProfilesData != null)
-            userProfilesData.clear();
-        if(userProfilesData == null)
-            userProfilesData = new ArrayList<Store>();
         if(x < id.length) {
             new Handler().postDelayed(new Runnable() {
                 int y = i;
                 @Override
                 public void run() {
-                    boolean found = false;
                     final String ID = userID[y];
-                    if(!ID.equals(Backendless.UserService.CurrentUser().getUserId())) {
+                    if(!ID.equals(MainLogin.getUser().getObjectId())) {
                         Backendless.Data.of(BackendlessUser.class).findById(ID,
                                 new AsyncCallback<BackendlessUser>() {
                                     @Override
@@ -817,7 +843,14 @@ public class HomePage extends AppCompatActivity {
             for(int i = 0; i < buyingGsonData.size(); i++){
                 if(buyingGsonData.get(i).getDealProgression() == 6){
                     buyingcomplete = true;
-                    break;
+                    for(int x = 0; x < buyingMessages.size(); x++){
+                        if(buyingMessages.get(x).get(0).getData().getSender().equals(buyingGsonData.get(i).getSeller()) ||
+                                buyingMessages.get(x).get(0).getData().getReceiver().equals(buyingGsonData.get(i).getSeller())){
+                            buyingMessages.remove(x);
+                            Log.e("Buying Messages", new Gson().toJson(buyingMessages).toString());
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -827,7 +860,14 @@ public class HomePage extends AppCompatActivity {
                     Log.e("AMNT", "" +
                             sellingGsonData.get(i).getData().get(0).getSelectedAmnt());
                     sellingcomplete = true;
-                    break;
+                    for(int x = 0; x < sellingMessages.size(); x++){
+                        if(sellingMessages.get(x).get(0).getData().getSender().equals(sellingGsonData.get(i).getBuyer()) ||
+                                sellingMessages.get(x).get(0).getData().getReceiver().equals(sellingGsonData.get(i).getBuyer())){
+                            sellingMessages.remove(x);
+                            Log.e("Buying Messages", new Gson().toJson(buyingMessages).toString());
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -840,6 +880,14 @@ public class HomePage extends AppCompatActivity {
                     buyingGsonData.remove(i);
                     i-= 1;
                 }
+            }
+            try {
+                String path = getFilesDir() + "/messages/" + "buyingMsgs";
+                BufferedWriter out = new BufferedWriter(new FileWriter(path));
+                out.write(new Gson().toJson(buyingMessages).toString());
+                out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
             Log.i("HISTORY Buying", "" + new Gson().toJson(buyingGsonDataHistory).toString());
             String gsonData = new Gson().toJson(buyingGsonData).toString();
@@ -890,6 +938,14 @@ public class HomePage extends AppCompatActivity {
                     i-= 1;
                 }
             }
+            try {
+                String path = getFilesDir() + "/messages/" + "sellingMsgs";
+                BufferedWriter out = new BufferedWriter(new FileWriter(path));
+                out.write(new Gson().toJson(sellingMessages).toString());
+                out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             String gsonData = new Gson().toJson(sellingGsonData).toString();
             Log.i("History Selling Data: ", gsonData);
             saveData(gsonData, 3);
@@ -922,13 +978,15 @@ public class HomePage extends AppCompatActivity {
                         Backendless.Data.of("Messaging").findById(MsgID, new AsyncCallback<Map>() {
                             @Override
                             public void handleResponse(Map response) {
-                                if(index == 1)
+                                if(index == 1) {
                                     response.put("buyingDataGson", location);
-                                else if(index == 2)
+                                    response.put("buyingMsgs", new Gson().toJson(buyingMessages).toString());
+                                }else if(index == 2)
                                     response.put("buyingDataGsonHistory", location);
-                                else if(index == 3)
+                                else if(index == 3) {
                                     response.put("sellingDataGson", location);
-                                else if(index == 4)
+                                    response.put("sellingMsgs", new Gson().toJson(sellingMessages).toString());
+                                }else if(index == 4)
                                     response.put("sellingDataGsonHistory", location);
                                 Backendless.Persistence.of("Messaging").save( response, new AsyncCallback<Map>()
                                 {
